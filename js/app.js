@@ -6,14 +6,15 @@ const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
 const IDLE_RESET_MS = 60000;   // reset to landing after 60 s of inactivity
-const IDLE_WARN_MS = 50000;    // show "still there?" 10 s before reset
+const IDLE_RESET_END_MS = 90000; // the end screen stays up longer for the store associate
+const IDLE_WARN_BEFORE_MS = 10000; // show "still there?" 10 s before reset
 
 const state = {
   screen: 'landing',
   unlocked: false,
   completed: new Set(),
   answers: new Set(),
-  tier: 'mid'
+  tier: DATA.tierOrder[0]
 };
 
 /* ---------------------------------------------------------------- utils */
@@ -77,10 +78,13 @@ const actions = {
     renderRecommendation();
     show('rec');
   },
-  'back-quiz': () => show('quiz'),
+  'back-quiz': () => { closeSheet(); show('quiz'); },
   compare: () => { renderComparison(); show('compare'); },
-  'back-rec': () => show('rec'),
-  end: () => { renderEnd(); show('end'); },
+  specs: () => showSheet('specs-sheet'),
+  sources: () => showSheet('sources-sheet'),
+  'close-sheet': () => closeSheet(),
+  'back-rec': () => { closeSheet(); show('rec'); },
+  end: () => { closeSheet(); renderEnd(); show('end'); },
   restart: () => resetAll(),
   stay: () => bumpActivity()
 };
@@ -94,6 +98,7 @@ document.addEventListener('click', e => {
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Enter' && state.screen === 'landing') { e.preventDefault(); actions.enter(); }
+  if (e.key === 'Escape' && openSheet) { closeSheet(); return; }
   if (e.key === 'Escape' && state.screen === 'game') actions['exit-game']();
 });
 
@@ -115,7 +120,8 @@ function resetAll() {
   state.unlocked = false;
   state.completed.clear();
   state.answers.clear();
-  state.tier = 'mid';
+  state.tier = DATA.tierOrder[0];
+  closeSheet();
   $$('.mission').forEach(m => m.classList.remove('done'));
   $('#btn-next').classList.add('locked');
   const hint = $('#next-hint');
@@ -157,6 +163,7 @@ function buildQuiz() {
 }
 
 /* ----------------------------------------------- recommendation logic */
+// Highest tier among the picks wins; a busy "everyday" shopper (3+ picks) moves up.
 function computeTier(answers) {
   const order = DATA.tierOrder; // low -> high
   let best = -1;
@@ -165,58 +172,146 @@ function computeTier(answers) {
       if (ids.includes(a)) best = Math.max(best, order.indexOf(tier));
     }
   }
-  return best < 0 ? 'mid' : order[best];
+  let tier = best < 0 ? order[0] : order[best];
+  const bump = DATA.multitaskBump;
+  if (bump && tier === bump.from && answers.length >= bump.minPicks) tier = bump.to;
+  return tier;
 }
 
-function labelFor(id) { return DATA.useCases.find(u => u.id === id)?.label || id; }
+const labelFor = id => DATA.useCases.find(u => u.id === id)?.label || id;
+const listText = names => names.length > 1 ? names.slice(0, -1).join(', ') + ' & ' + names[names.length - 1] : (names[0] || '');
+const chipName = p => `${p.family} ${p.model}`.trim();
+/** The shopper's pick that best explains this tier (falls back to their first pick). */
+function topPick(tier, picks) {
+  return picks.find(id => (DATA.tierRules[tier] || []).includes(id)) || picks[0];
+}
+
+const LINE_ICONS = {
+  ai:     '<path d="M12 3l1.8 4.6L18.5 9.4l-4.7 1.8L12 16l-1.8-4.8L5.5 9.4l4.7-1.8z"/><path d="M19 15l.8 2 2 .8-2 .8-.8 2-.8-2-2-.8 2-.8z"/>',
+  shield: '<path d="M12 3l8 3v6c0 4.6-3.4 8.2-8 9-4.6-.8-8-4.4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
+  apps:   '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
+  bolt:   '<path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/>',
+  game:   '<path d="M6.5 8h11a4 4 0 0 1 4 4v2.5a3 3 0 0 1-5.3 1.9L14.5 14h-5l-1.7 2.4A3 3 0 0 1 2.5 14.5V12a4 4 0 0 1 4-4z"/><path d="M7.5 10.5v3M6 12h3"/><circle cx="16" cy="11" r=".6"/><circle cx="17.8" cy="13" r=".6"/>'
+};
+const lineIcon = name => `<svg viewBox="0 0 24 24" aria-hidden="true">${LINE_ICONS[name] || LINE_ICONS.ai}</svg>`;
+
+/** Generic AI laptop illustration (no real brand). Screen glows in the tier accent. */
+function laptopSVG(title, accent, { small = false } = {}) {
+  const id = 'lg' + Math.random().toString(36).slice(2, 7);
+  const keys = [];
+  for (let r = 0; r < 4; r++) for (let k = 0; k < 12; k++) {
+    const x = 92 + k * 26.5 + r * 4, y = 282 + r * 14;
+    keys.push(`<rect x="${x.toFixed(1)}" y="${y}" width="20" height="9" rx="2"/>`);
+  }
+  return `<svg class="laptop-svg" viewBox="0 0 480 400" role="img" aria-label="${esc(title)} illustration">
+    <defs>
+      <radialGradient id="${id}g" cx="50%" cy="45%" r="65%"><stop offset="0" stop-color="${accent}" stop-opacity=".95"/><stop offset=".55" stop-color="${accent}" stop-opacity=".35"/><stop offset="1" stop-color="#061a40" stop-opacity="1"/></radialGradient>
+      <linearGradient id="${id}b" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfd9ea"/><stop offset="1" stop-color="#8e9bb3"/></linearGradient>
+      <linearGradient id="${id}l" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b3550"/><stop offset="1" stop-color="#151b2c"/></linearGradient>
+      <filter id="${id}f" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="18"/></filter>
+    </defs>
+    <ellipse cx="240" cy="150" rx="170" ry="110" fill="${accent}" opacity=".35" filter="url(#${id}f)"/>
+    <rect x="70" y="20" width="340" height="232" rx="18" fill="url(#${id}l)"/>
+    <rect x="84" y="34" width="312" height="204" rx="8" fill="url(#${id}g)"/>
+    <circle cx="240" cy="27" r="2.5" fill="#56627e"/>
+    ${small ? '' : `<text x="240" y="128" text-anchor="middle" font-family="Space Grotesk, Inter, Arial, sans-serif" font-weight="700" font-size="30" fill="#ffffff">${esc(title)}</text>
+    <rect x="186" y="150" width="108" height="6" rx="3" fill="#ffffff" opacity=".55"/>
+    <rect x="206" y="164" width="68" height="6" rx="3" fill="#ffffff" opacity=".35"/>`}
+    <path d="M70 252h340l52 104a10 10 0 0 1-9 14H27a10 10 0 0 1-9-14z" fill="url(#${id}b)"/>
+    <path d="M18 356l4 8a10 10 0 0 0 5 6h426a10 10 0 0 0 5-6l4-8z" fill="#6f7c96"/>
+    <g fill="#5c6883" opacity=".55">${keys.join('')}</g>
+    <rect x="170" y="340" width="100" height="24" rx="4" fill="#a3afc5"/>
+    ${small ? `<rect x="330" y="338" width="88" height="26" rx="5" fill="#0a3fc2"/>` : `<rect x="296" y="334" width="150" height="32" rx="6" fill="#0a3fc2"/>
+    <text x="371" y="355" text-anchor="middle" font-family="Inter, Arial, sans-serif" font-weight="700" font-size="15" fill="#ffffff">Intel® Core™ Ultra</text>`}
+  </svg>`;
+}
 
 function renderRecommendation() {
   const p = DATA.processors[state.tier];
+  const L = p.laptop;
   const picks = [...state.answers];
-  $('#rec-img').src = p.image;
-  $('#rec-img').alt = `${p.family} processor illustration`;
-  $('.chip-halo').style.setProperty('--chip-accent', p.accent);
-  $('#rec-name').textContent = `${p.family}${p.model ? ' ' + p.model : ''}`;
-  $('#rec-tagline').textContent = p.tagline;
-  $('#rec-picks').innerHTML = picks.map(id => `<span class="chip-tag">${esc(labelFor(id))}</span>`).join('');
-  const key = p.specs.filter(x => x.key);
-  $('#rec-specs').innerHTML = (key.length ? key : p.specs.slice(0, 4)).map(x => `<li><span>${esc(x.label)}</span><b>${esc(x.value)}</b></li>`).join('');
-  // one concise, personalised sentence instead of a wall of cards
-  const tierPicks = picks.filter(id => (DATA.tierRules[state.tier] || []).includes(id));
-  const lead = tierPicks[0] || picks[0];
-  const names = picks.map(labelFor);
-  const list = names.length > 1 ? names.slice(0, -1).join(', ') + ' & ' + names[names.length - 1] : names[0];
-  $('#rec-why').innerHTML = `Great for <b>${esc(list)}</b>. ${esc(DATA.useCaseReasons[lead] || '')}`;
-  $('#rec-roles').innerHTML = [['CPU', p.roles.cpu], ['GPU', p.roles.gpu], ['NPU', p.roles.npu]]
-    .map(([k, v]) => `<div class="role"><b>${k}</b><p>${esc(v)}</p></div>`).join('');
-  $('.placeholder-badge').style.display = (DATA.showPlaceholderBadges && p.placeholder) ? '' : 'none';
+  $('#rec-art').innerHTML = laptopSVG(L.title, p.accent);
+  $('#rec-art').style.setProperty('--accent', p.accent);
+  $('#rec-name').textContent = L.title;
+  $('#rec-sub').textContent = `with ${chipName(p)}`;
+  $('#rec-benefits').innerHTML = L.benefits.slice(0, 3).map(b =>
+    `<li><span class="b-ico" style="--accent:${esc(p.accent)}">${lineIcon(b.icon)}</span><span>${esc(b.text)}</span></li>`).join('');
+  const lead = topPick(state.tier, picks);
+  $('#rec-why').innerHTML = `<b>Why it fits you:</b> ${esc(DATA.useCaseReasons[lead] || '')}`;
+  // tech-specs sheet content
+  $('#sheet-title').textContent = `${chipName(p)} · tech specs`;
+  $('#sheet-specs').innerHTML = p.specs.map(s => `<div><span>${esc(s.label)}</span><b>${esc(s.value)}</b></div>`).join('');
+  $('#sheet-roles').innerHTML = [['CPU', p.roles.cpu], ['GPU', p.roles.gpu], ['NPU', p.roles.npu]]
+    .map(([k, v]) => `<div><b>${k}</b><p>${esc(v)}</p></div>`).join('');
+  $('#sheet-also').textContent = L.alsoIn || '';
 }
 
 function renderComparison() {
   const p = DATA.processors[state.tier];
   const c = DATA.comparisons[state.tier];
-  $('#cmp-note').style.display = DATA.showPlaceholderBadges ? '' : 'none';
-  const head = `<div class="cmp-head">
-      <div></div>
-      <div class="who intel"><img src="${esc(p.image)}" alt="" />${esc(p.family)}${p.model ? ' ' + esc(p.model) : ''}</div>
-      <div class="who comp"><img src="${esc(c.competitorImage)}" alt="" />${esc(c.competitorName)}</div>
-    </div>`;
-  const rows = c.rows.map((r, i) => `<div class="cmp-row" style="animation-delay:${i * 70}ms">
-      <span class="lbl">${esc(r.label)}</span>
-      <span class="v ${r.winner === 'intel' ? 'win' : ''}">${esc(r.intel)}</span>
-      <span class="v comp ${r.winner === 'competitor' ? 'win' : ''}">${esc(r.competitor)}</span>
-    </div>`).join('');
-  $('#cmp-table').innerHTML = head + rows;
-  $('#cmp-adv').innerHTML = c.advantages.map(a => `<div class="adv">${esc(a)}</div>`).join('');
+  const picks = [...state.answers];
+  const article = /^[aeiou]|^(AMD|HP|LG|MSI)\b/i.test(c.competitorName) ? 'an' : 'a';
+  $('#cmp-title').innerHTML = `Intel AI laptop <span class="vs">vs</span> ${article} ${esc(c.competitorName)} laptop`;
+  $('#cmp-chips').innerHTML = `<span class="intel">${esc(chipName(p))}</span><span class="sep">vs</span><span>${esc(c.competitorName)}</span>`;
+
+  const hits = r => (r.matters || []).filter(m => picks.includes(m));
+  const rows = c.rows.map((r, i) => ({ r, i, hl: hits(r).length > 0 }))
+    .sort((a, b) => (b.hl - a.hl) || (a.i - b.i))
+    .slice(0, 5);
+  const cell = (val, side, r) => {
+    const win = r.winner === side;
+    const cls = win ? (side === 'intel' ? 'win' : 'win-neutral') : '';
+    return `<span class="v ${side} ${cls}">${win ? '<i aria-hidden="true">✓</i>' : ''}${esc(val)}</span>`;
+  };
+  $('#cmp-table').innerHTML =
+    `<div class="cmp-head"><span></span><span class="intel">Intel</span><span>${esc(c.competitorName.split(/[\s™]/)[0])}</span></div>` +
+    rows.map(({ r, hl }, k) => `<div class="cmp-row ${hl ? 'hl' : ''}" style="animation-delay:${k * 60}ms">
+        <span class="lbl">${esc(r.label)}${hl ? '<em class="tag">Matters to you</em>' : ''}</span>
+        ${cell(r.intel, 'intel', r)}${cell(r.competitor, 'competitor', r)}
+        ${r.note ? `<span class="note">${esc(r.note)}</span>` : ''}
+      </div>`).join('');
+
+  const hl = rows.filter(x => x.hl);
+  const wins = rows.filter(x => x.r.winner === 'intel').length;
+  let verdict;
+  if (hl.length && hl.every(x => x.r.winner === 'intel')) {
+    const mattered = picks.filter(id => hl.some(x => (x.r.matters || []).includes(id)));
+    verdict = `Intel wins where it matters for ${listText(mattered.map(labelFor))}`;
+  } else {
+    verdict = `Intel leads in ${wins} of ${rows.length}`;
+  }
+  $('#cmp-verdict').textContent = verdict;
+  $('#cmp-callout').textContent = (c.advantages && c.advantages[0]) || '';
+  $('#cmp-callout').hidden = !(c.advantages && c.advantages[0]);
+  $('#sources-list').innerHTML = (DATA.sources || []).map(s => `<li>${esc(s)}</li>`).join('');
 }
 
 function renderEnd() {
   const p = DATA.processors[state.tier];
-  $('#end-img').src = p.image;
-  $('#end-img').alt = `${p.family} processor illustration`;
-  $('#end-name').textContent = `${p.family}${p.model ? ' ' + p.model : ''}`;
-  $('#end-tag').textContent = p.tagline;
+  const L = p.laptop;
+  $('#end-art').innerHTML = laptopSVG(L.title, p.accent, { small: true });
+  $('#end-ask').innerHTML = `Ask for: <b>${esc(L.title)}</b> with ${esc(chipName(p))}`;
+  const ex = (L.examples || []).slice(0, 3);
+  $('#end-examples').hidden = !ex.length;
+  $('#end-chips').innerHTML = ex.map(e => `<li><b>${esc(e.name)}</b><span>${esc(e.note)}</span></li>`).join('');
 }
+
+/* ------------------------------------------------- sheets & overlays */
+let openSheet = null;
+function showSheet(id) {
+  closeSheet();
+  openSheet = $('#' + id);
+  openSheet.classList.add('show');
+  openSheet.querySelector('.sheet-close')?.focus({ preventScroll: true });
+}
+function closeSheet() {
+  if (!openSheet) return;
+  openSheet.classList.remove('show');
+  openSheet = null;
+}
+document.addEventListener('click', e => {
+  if (openSheet && e.target === openSheet) closeSheet(); // tap outside the panel
+});
 
 /* ------------------------------------------------------------- game */
 let game = null;
@@ -279,10 +374,11 @@ function hideIdle() { idleShown = false; $('#idle-overlay').classList.remove('sh
 setInterval(() => {
   if (state.screen === 'landing') { lastActivity = performance.now(); return; }
   const idle = performance.now() - lastActivity;
-  if (idle >= IDLE_RESET_MS) { resetAll(); return; }
-  if (idle >= IDLE_WARN_MS) {
+  const limit = state.screen === 'end' ? IDLE_RESET_END_MS : IDLE_RESET_MS;
+  if (idle >= limit) { resetAll(); return; }
+  if (idle >= limit - IDLE_WARN_BEFORE_MS) {
     if (!idleShown) { idleShown = true; $('#idle-overlay').classList.add('show'); }
-    $('#idle-count').textContent = Math.ceil((IDLE_RESET_MS - idle) / 1000);
+    $('#idle-count').textContent = Math.ceil((limit - idle) / 1000);
   }
 }, 250);
 

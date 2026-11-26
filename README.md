@@ -36,13 +36,24 @@ All paths are relative, so the site works from a sub-path. `.nojekyll` is includ
 - After 60 s with no input the experience resets to the landing screen. A "Still there?" warning appears at 50 s.
 - The kiosk needs internet access for the Three.js CDN and Google Fonts. If the 3D engine can't load, the game shows a friendly fallback and the journey continues.
 
-## Editing product data — `js/processors.js`
+## Editing product data: `js/processors.js`
 
-This one file holds every processor name, model, spec, image, explanation, quiz option, tier rule, and comparison row.
+All product content lives in this one file. The shopper is recommended an **AI laptop**, not a chip.
 
-- **Everything there is a PLACEHOLDER until you verify it** against official Intel sources and the SKUs your store actually stocks. Competitor names and values are deliberately generic.
-- Once the data is verified, set `showPlaceholderBadges: false` to hide the placeholder badges and notes.
-- Tier logic: Gaming or Content Creation → `top` (Ultra 9). Work, Studying or Entertainment → `mid` (Ultra 7). Everyday Browsing only → `entry` (Ultra 5). The highest applicable tier wins.
+- **Tiers:** `everyday` (Core Ultra 5 325), `pro` (Core Ultra 7 355), `creator` (Core Ultra 7 356H), `gaming` (Core Ultra X9 388H).
+  The highest tier among the quiz picks wins. `multitaskBump` moves an `everyday` result to `pro` when 3+ options are picked.
+- **`laptop` block per tier:**
+  - `title` and `headline`.
+  - Three `benefits`, each with an icon: `ai`, `shield`, `apps`, `bolt` or `game`.
+  - Up to 3 `examples`: shown on the end screen, and hidden if the list is empty.
+  - `alsoIn`: shown in the Tech specs sheet.
+- **`comparisons`:** up to 5 rows are shown per tier.
+  - Rows whose `matters` list includes one of the shopper's picks are highlighted and shown first.
+  - `note` is shown under its row.
+  - The first `advantages` line is shown as the callout.
+- **`sources`:** listed in the "Sources" overlay on the comparison screen.
+
+Re-check specs and in-store stock periodically.
 
 ## Visual style
 

@@ -38,7 +38,7 @@
       <div class="landing-inner">
         <div class="pixel-chip" aria-hidden="true"><canvas id="pixel-chip" width="32" height="32"></canvas></div>
         <h1 class="pixel-title"><span class="t1">AI PC</span><span class="t2">QUEST</span></h1>
-        <p class="pixel-sub">Why an AI PC? Play to find out.</p>
+        <p class="lead">Why an AI PC? Play to find out.</p>
         <button class="hex-btn hex-xl pulse" data-action="enter">ENTER EXPERIENCE</button>
       </div>
       <p class="brand-foot">1 MILLION MINDS</p>
@@ -222,7 +222,7 @@
     <section class="screen modern" id="screen-quiz" data-screen="quiz">
       <button class="corner-btn" data-action="back-select" aria-label="Back" title="Back">◀</button>
       <div class="modern-inner">
-        <h2 class="m-h2">What will you use your PC for?</h2>
+        <h1 class="m-h1">What will you use your PC for?</h1>
         <p class="m-sub">Pick all that apply</p>
         <div class="quiz-grid" id="quiz-grid"></div>
         <p class="quiz-msg" id="quiz-msg" aria-live="polite"></p>
@@ -230,69 +230,85 @@
       </div>
     </section>
 
-    <!-- 6. RECOMMENDATION ================================================= -->
+    <!-- 6. RECOMMENDATION: "Your AI laptop" =========================== -->
     <section class="screen modern" id="screen-rec" data-screen="rec">
       <button class="corner-btn" data-action="back-quiz" aria-label="Edit answers" title="Edit answers">◀</button>
       <div class="modern-inner rec-inner">
-        <div class="rec-layout">
-          <div class="rec-visual">
-            <div class="chip-halo"><img id="rec-img" src="assets/chip-ultra7.svg" alt="" width="160" height="160" /></div>
-          </div>
-          <div class="rec-info">
-            <p class="rec-kicker">Your match</p>
-            <h2 class="m-h1" id="rec-name">Intel Core Ultra 7</h2>
-            <p class="rec-tagline" id="rec-tagline"></p>
-            <p class="rec-why" id="rec-why"></p>
+        <div class="rec-art" id="rec-art"></div>
+        <div class="rec-info">
+          <p class="kicker">YOUR AI LAPTOP</p>
+          <h1 class="m-h1" id="rec-name">AI Laptop</h1>
+          <p class="rec-sub" id="rec-sub"></p>
+          <ul class="benefits" id="rec-benefits"></ul>
+          <p class="rec-why" id="rec-why"></p>
+          <div class="btn-row">
+            <button class="hex-btn hex-lg" data-action="compare">SEE HOW IT COMPARES ▶</button>
+            <button class="hex-btn hex-md ghost" data-action="specs">TECH SPECS</button>
           </div>
         </div>
-        <ul class="spec-list" id="rec-specs"></ul>
-        <div class="roles-grid" id="rec-roles"></div>
-        <span class="badge placeholder-badge">PLACEHOLDER SPECS</span>
-        <div class="btn-row">
-          <button class="hex-btn hex-md ghost" data-action="end">END EXPERIENCE</button>
-          <button class="hex-btn hex-lg" data-action="compare">SEE HOW IT COMPARES ▶</button>
-        </div>
-        <div id="rec-picks" hidden></div>
       </div>
     </section>
 
     <!-- 7. COMPARISON ===================================================== -->
     <section class="screen modern" id="screen-compare" data-screen="compare">
       <button class="corner-btn" data-action="back-rec" aria-label="Back" title="Back">◀</button>
-      <div class="modern-inner">
-        <h2 class="m-h2">How it compares</h2>
+      <div class="modern-inner cmp-inner">
+        <h2 class="cmp-title" id="cmp-title">Intel AI laptop vs a competitor laptop</h2>
+        <p class="cmp-chips" id="cmp-chips"></p>
         <div class="cmp-table" id="cmp-table"></div>
-        <div class="adv-list" id="cmp-adv"></div>
-        <p class="placeholder-note" id="cmp-note">Competitor names and values are placeholders — edit <code>js/processors.js</code>.</p>
-        <button class="hex-btn hex-lg" data-action="end">END EXPERIENCE ▶</button>
+        <p class="cmp-verdict" id="cmp-verdict"></p>
+        <p class="cmp-callout" id="cmp-callout"></p>
+        <div class="btn-row">
+          <button class="hex-btn hex-lg" data-action="end">GET MY LAPTOP ▶</button>
+          <button class="text-btn" data-action="sources">Sources</button>
+        </div>
       </div>
     </section>
 
-    <!-- 8. END ============================================================ -->
+    <!-- 8. END: clear next step ========================================= -->
     <section class="screen modern" id="screen-end" data-screen="end">
       <div class="modern-inner end-inner">
-        <div class="end-burst" aria-hidden="true"></div>
-        <h2 class="m-h1 end-title">Thank you for shopping with us!</h2>
-        <div class="hex-card end-card">
-          <img id="end-img" src="assets/chip-ultra7.svg" alt="" width="100" height="100" />
-          <div>
-            <p class="rec-kicker">Your recommended processor</p>
-            <h3 class="m-h2" id="end-name">Intel Core Ultra 7</h3>
-            <p class="end-tag" id="end-tag"></p>
-          </div>
+        <h1 class="m-h1 end-title">Thank you for shopping with us!</h1>
+        <div class="end-card">
+          <div class="end-art" id="end-art"></div>
+          <p class="end-ask" id="end-ask"></p>
         </div>
-        <p class="end-cta">Show this screen to a store associate to see your recommended PC.</p>
+        <div class="end-examples" id="end-examples">
+          <p class="label">Examples in India: check today's stock</p>
+          <ul class="ex-chips" id="end-chips"></ul>
+        </div>
+        <p class="end-cta">Show this screen to a store associate.</p>
         <button class="hex-btn hex-lg" data-action="restart">↻ RESTART</button>
       </div>
     </section>
 
   </main>
 
+  <!-- Tech specs bottom sheet -->
+  <div class="sheet-backdrop" id="specs-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="sheet">
+      <button class="sheet-close" data-action="close-sheet" aria-label="Close">✕</button>
+      <h3 class="sheet-title" id="sheet-title">Tech specs</h3>
+      <div class="spec-grid" id="sheet-specs"></div>
+      <div class="role-row" id="sheet-roles"></div>
+      <p class="sheet-also" id="sheet-also"></p>
+    </div>
+  </div>
+
+  <!-- Sources overlay -->
+  <div class="sheet-backdrop" id="sources-sheet" role="dialog" aria-modal="true" aria-labelledby="sources-title">
+    <div class="sheet">
+      <button class="sheet-close" data-action="close-sheet" aria-label="Close">✕</button>
+      <h3 class="sheet-title" id="sources-title">Sources</h3>
+      <ul class="sources-list" id="sources-list"></ul>
+    </div>
+  </div>
+
   <!-- Inactivity warning -->
   <div class="idle-overlay" id="idle-overlay" role="dialog" aria-modal="true" aria-labelledby="idle-title">
     <div class="hex-card overlay-card">
       <h3 class="ov-title" id="idle-title">Still there?</h3>
-      <p class="ov-text">Restarting in <b id="idle-count">10</b>s</p>
+      <p class="idle-text">Restarting in <b id="idle-count">10</b>s</p>
       <button class="hex-btn hex-md" data-action="stay">I'M HERE</button>
     </div>
   </div>
