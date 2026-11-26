@@ -1,0 +1,306 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+  <meta name="theme-color" content="#020814" />
+  <meta name="description" content="1 Million Minds — an interactive AI PC retail experience: play, take the quiz, get your personalised Intel Core Ultra recommendation." />
+  <title>AI PC Quest · 1 Million Minds</title>
+  <link rel="icon" href="assets/chip-ultra7.svg" type="image/svg+xml" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Press+Start+2P&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/styles.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <div class="bg-grid" aria-hidden="true"></div>
+
+  <!-- Global kiosk control (hidden in-game) -->
+  <div class="kiosk-bar">
+    <button class="icon-btn" id="btn-fullscreen" aria-label="Toggle fullscreen" title="Fullscreen">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
+    </button>
+  </div>
+
+  <main id="app">
+
+    <!-- 1. LANDING ======================================================= -->
+    <section class="screen pixel active" id="screen-landing" data-screen="landing">
+      <canvas class="pixel-stars" id="pixel-stars" aria-hidden="true"></canvas>
+      <div class="landing-inner">
+        <div class="pixel-chip" aria-hidden="true"><canvas id="pixel-chip" width="32" height="32"></canvas></div>
+        <h1 class="pixel-title"><span class="t1">AI PC</span><span class="t2">QUEST</span></h1>
+        <p class="pixel-sub">Why an AI PC? Play to find out.</p>
+        <button class="hex-btn hex-xl pulse" data-action="enter">ENTER EXPERIENCE</button>
+      </div>
+      <p class="brand-foot">1 MILLION MINDS</p>
+    </section>
+
+    <!-- 2. GAME SELECTION ================================================= -->
+    <section class="screen pixel" id="screen-select" data-screen="select">
+      <button class="corner-btn" data-action="home" aria-label="Back to start" title="Back to start">◀</button>
+      <div class="select-inner">
+        <h2 class="pixel-h2">See how Intel AI PCs can upgrade how you use your computer!</h2>
+        <div class="mission-row">
+          <button class="hex-card mission bounce b1" data-action="play-gaming">
+            <span class="mission-icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64"><path d="M14 22h36a10 10 0 0 1 10 10v6a8 8 0 0 1-14 5l-4-5H22l-4 5a8 8 0 0 1-14-5v-6a10 10 0 0 1 10-10z" fill="none" stroke="currentColor" stroke-width="3"/><path d="M18 28v10M13 33h10" stroke="currentColor" stroke-width="3"/><circle cx="44" cy="30" r="2.5" fill="currentColor"/><circle cx="50" cy="36" r="2.5" fill="currentColor"/></svg>
+            </span>
+            <span class="mission-name">GAMING</span>
+            <span class="mission-tag play">PLAY</span>
+            <span class="done-badge">✔ DONE</span>
+          </button>
+          <button class="hex-card mission bounce b2" data-action="play-work">
+            <span class="mission-icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64"><rect x="8" y="20" width="48" height="32" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><path d="M24 20v-6h16v6M8 34h48" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+            </span>
+            <span class="mission-name">WORK</span>
+            <span class="mission-tag">SOON</span>
+            <span class="done-badge">✔ DONE</span>
+          </button>
+          <button class="hex-card mission bounce b3" data-action="play-learning">
+            <span class="mission-icon" aria-hidden="true">
+              <svg viewBox="0 0 64 64"><path d="M4 24 32 12l28 12-28 12z" fill="none" stroke="currentColor" stroke-width="3"/><path d="M16 30v12c0 4 8 8 16 8s16-4 16-8V30M60 24v14" fill="none" stroke="currentColor" stroke-width="3"/></svg>
+            </span>
+            <span class="mission-name">LEARNING</span>
+            <span class="mission-tag">SOON</span>
+            <span class="done-badge">✔ DONE</span>
+          </button>
+        </div>
+        <div class="next-wrap">
+          <button class="hex-btn hex-lg next-btn locked" id="btn-next" data-action="next">
+            <span class="lock-ico" aria-hidden="true">🔒</span><span class="next-label">NEXT</span>
+          </button>
+          <p class="next-hint" id="next-hint">Complete a mission to unlock</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. GAMING (3D racing) ============================================= -->
+    <section class="screen pixel game-screen" id="screen-game" data-screen="game">
+      <div id="game-root" class="game-root">
+        <canvas id="game-canvas"></canvas>
+
+        <!-- HUD: minimal, edge-anchored, no heavy panels -->
+        <div class="hud" id="hud" aria-live="off">
+          <div class="hud-tl">
+            <button class="corner-btn game-exit" data-action="exit-game" aria-label="Exit game" title="Exit">✕</button>
+            <div class="hud-system">
+              <div class="hud-system-name" id="hud-system">BASIC PC</div>
+              <div class="upgrade-slots">
+                <span class="slot" data-slot="0" title="Increased frame rate">FPS</span>
+                <span class="slot" data-slot="1" title="AI Upscaling">XeSS</span>
+                <span class="slot" data-slot="2" title="Reduced lag">LAG</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="hud-progress">
+            <div class="hud-row"><span id="hud-dist">0 m</span><span id="hud-time">0.0s</span></div>
+            <div class="bar progress"><i id="hud-progress-bar"></i><b class="cp" style="left:var(--cp1)"></b><b class="cp" style="left:var(--cp2)"></b><b class="cp" style="left:var(--cp3)"></b></div>
+            <div class="hud-zone" id="hud-zone"></div>
+          </div>
+
+          <div class="hud-tr">
+            <div class="stat"><span class="ico coin-ico" aria-hidden="true"></span><b id="hud-coins">0</b></div>
+            <div class="stat"><span class="lbl">SCORE</span><b id="hud-score">0</b></div>
+            <div class="stat fps"><span class="lbl">FPS</span><b id="hud-fps">--</b></div>
+            <div class="hud-tag" id="hud-simtag"></div>
+          </div>
+
+          <div class="hud-bl">
+            <div class="hud-speedo">
+              <canvas id="speedo" width="200" height="200"></canvas>
+              <div class="speed-readout"><span id="hud-speed">0</span><small>KM/H</small></div>
+            </div>
+            <div class="hud-meters">
+              <div class="meter"><span>ACC</span><div class="bar accel"><i id="bar-accel"></i></div></div>
+              <div class="meter"><span>BRK</span><div class="bar brake"><i id="bar-brake"></i></div></div>
+              <div class="meter"><span>FUEL</span><div class="bar fuel"><i id="bar-fuel"></i></div></div>
+              <div class="meter"><span>BOOST</span><div class="bar boost"><i id="bar-boost"></i></div></div>
+            </div>
+          </div>
+
+          <div class="hud-br"><canvas id="minimap" width="180" height="180"></canvas></div>
+        </div>
+
+        <!-- Touch controls (shown on touch screens only) -->
+        <div class="touch-controls" id="touch-controls">
+          <div class="tc-left">
+            <button class="tc-btn" data-key="left" aria-label="Steer left">◀</button>
+            <button class="tc-btn" data-key="right" aria-label="Steer right">▶</button>
+          </div>
+          <div class="tc-right">
+            <button class="tc-btn tc-small" data-key="brake" aria-label="Brake">BRAKE</button>
+            <button class="tc-btn tc-boost" data-key="boost" aria-label="Boost">BOOST</button>
+            <button class="tc-btn tc-gas" data-key="gas" aria-label="Accelerate">GAS</button>
+          </div>
+        </div>
+
+        <!-- Overlays -->
+        <div class="game-overlay" id="game-tutorial">
+          <div class="hex-card overlay-card">
+            <h3 class="ov-title">You start with a normal computer.</h3>
+            <p class="ov-text">Collect <span class="coin-word">coins</span> to unlock AI PC features!</p>
+            <p class="controls-line"><kbd>W</kbd> gas · <kbd>S</kbd> brake · <kbd>A</kbd><kbd>D</kbd> steer · <kbd>SHIFT</kbd> boost</p>
+            <div class="countdown-bar"><i id="tutorial-bar"></i></div>
+            <p class="ov-small" id="tutorial-count">Starting in 5…</p>
+          </div>
+        </div>
+
+        <div class="upgrade-toast" id="upgrade-toast" aria-live="polite">
+          <div class="ut-head">UPGRADE ACQUIRED!</div>
+          <div class="ut-name" id="ut-name">INCREASED FRAME RATE</div>
+          <div class="ut-desc" id="ut-desc"></div>
+        </div>
+        <div class="zone-toast" id="zone-toast"></div>
+        <div class="go-text" id="go-text">GO!</div>
+
+        <div class="game-overlay" id="game-results">
+          <div class="hex-card overlay-card results-card">
+            <h3 class="ov-title">Your PC just became an <span class="hl">AI PC</span></h3>
+            <div class="results-grid">
+              <div><span>TIME</span><b id="res-time">0s</b></div>
+              <div><span>SCORE</span><b id="res-score">0</b></div>
+              <div><span>COINS</span><b id="res-coins">0</b></div>
+              <div><span>HITS</span><b id="res-hits">0</b></div>
+            </div>
+            <div class="roles-mini">
+              <span><b>GPU</b> frames &amp; AI upscaling</span>
+              <span><b>CPU</b> smooth, lag-free multitasking</span>
+              <span><b>NPU</b> low-power AI effects</span>
+            </div>
+            <div class="btn-row">
+              <button class="hex-btn hex-sm ghost" data-action="race-again">↻ AGAIN</button>
+              <button class="hex-btn hex-md" data-action="finish-game">CONTINUE ▶</button>
+            </div>
+            <p class="ov-small disclaimer">Effects are simulated for demonstration, not benchmarks.</p>
+          </div>
+        </div>
+
+        <div class="game-overlay" id="game-error">
+          <div class="hex-card overlay-card">
+            <h3 class="ov-title">3D graphics couldn't start on this device.</h3>
+            <p class="ov-text small" id="game-error-msg">WebGL is unavailable or the 3D engine failed to load.</p>
+            <div class="btn-row"><button class="hex-btn hex-md" data-action="finish-game">CONTINUE ▶</button></div>
+          </div>
+        </div>
+
+        <div class="game-loading" id="game-loading"><div class="loader"></div><p>LOADING…</p></div>
+      </div>
+    </section>
+
+    <!-- 4. PLACEHOLDERS =================================================== -->
+    <section class="screen pixel" id="screen-work" data-screen="work">
+      <div class="placeholder-inner">
+        <div class="hex-card ph-card">
+          <h2 class="pixel-h2">WORK · COMING SOON</h2>
+          <p class="ph-text">AI meeting notes, background blur and noise suppression on the NPU — while your CPU and GPU stay free.</p>
+          <button class="hex-btn hex-md" data-action="finish-placeholder">◀ RETURN</button>
+        </div>
+      </div>
+    </section>
+    <section class="screen pixel" id="screen-learning" data-screen="learning">
+      <div class="placeholder-inner">
+        <div class="hex-card ph-card">
+          <h2 class="pixel-h2">LEARNING · COMING SOON</h2>
+          <p class="ph-text">On-device live captions, AI summaries and all-day battery for classes and late-night cramming.</p>
+          <button class="hex-btn hex-md" data-action="finish-placeholder">◀ RETURN</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 5. QUIZ =========================================================== -->
+    <section class="screen modern" id="screen-quiz" data-screen="quiz">
+      <button class="corner-btn" data-action="back-select" aria-label="Back" title="Back">◀</button>
+      <div class="modern-inner">
+        <h2 class="m-h2">What will you use your PC for?</h2>
+        <p class="m-sub">Pick all that apply</p>
+        <div class="quiz-grid" id="quiz-grid"></div>
+        <p class="quiz-msg" id="quiz-msg" aria-live="polite"></p>
+        <button class="hex-btn hex-lg" id="btn-finish" data-action="finish-quiz">FINISH ▶</button>
+      </div>
+    </section>
+
+    <!-- 6. RECOMMENDATION ================================================= -->
+    <section class="screen modern" id="screen-rec" data-screen="rec">
+      <button class="corner-btn" data-action="back-quiz" aria-label="Edit answers" title="Edit answers">◀</button>
+      <div class="modern-inner rec-inner">
+        <div class="rec-layout">
+          <div class="rec-visual">
+            <div class="chip-halo"><img id="rec-img" src="assets/chip-ultra7.svg" alt="" width="160" height="160" /></div>
+          </div>
+          <div class="rec-info">
+            <p class="rec-kicker">Your match</p>
+            <h2 class="m-h1" id="rec-name">Intel Core Ultra 7</h2>
+            <p class="rec-tagline" id="rec-tagline"></p>
+            <p class="rec-why" id="rec-why"></p>
+          </div>
+        </div>
+        <ul class="spec-list" id="rec-specs"></ul>
+        <div class="roles-grid" id="rec-roles"></div>
+        <span class="badge placeholder-badge">PLACEHOLDER SPECS</span>
+        <div class="btn-row">
+          <button class="hex-btn hex-md ghost" data-action="end">END EXPERIENCE</button>
+          <button class="hex-btn hex-lg" data-action="compare">SEE HOW IT COMPARES ▶</button>
+        </div>
+        <div id="rec-picks" hidden></div>
+      </div>
+    </section>
+
+    <!-- 7. COMPARISON ===================================================== -->
+    <section class="screen modern" id="screen-compare" data-screen="compare">
+      <button class="corner-btn" data-action="back-rec" aria-label="Back" title="Back">◀</button>
+      <div class="modern-inner">
+        <h2 class="m-h2">How it compares</h2>
+        <div class="cmp-table" id="cmp-table"></div>
+        <div class="adv-list" id="cmp-adv"></div>
+        <p class="placeholder-note" id="cmp-note">Competitor names and values are placeholders — edit <code>js/processors.js</code>.</p>
+        <button class="hex-btn hex-lg" data-action="end">END EXPERIENCE ▶</button>
+      </div>
+    </section>
+
+    <!-- 8. END ============================================================ -->
+    <section class="screen modern" id="screen-end" data-screen="end">
+      <div class="modern-inner end-inner">
+        <div class="end-burst" aria-hidden="true"></div>
+        <h2 class="m-h1 end-title">Thank you for shopping with us!</h2>
+        <div class="hex-card end-card">
+          <img id="end-img" src="assets/chip-ultra7.svg" alt="" width="100" height="100" />
+          <div>
+            <p class="rec-kicker">Your recommended processor</p>
+            <h3 class="m-h2" id="end-name">Intel Core Ultra 7</h3>
+            <p class="end-tag" id="end-tag"></p>
+          </div>
+        </div>
+        <p class="end-cta">Show this screen to a store associate to see your recommended PC.</p>
+        <button class="hex-btn hex-lg" data-action="restart">↻ RESTART</button>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Inactivity warning -->
+  <div class="idle-overlay" id="idle-overlay" role="dialog" aria-modal="true" aria-labelledby="idle-title">
+    <div class="hex-card overlay-card">
+      <h3 class="ov-title" id="idle-title">Still there?</h3>
+      <p class="ov-text">Restarting in <b id="idle-count">10</b>s</p>
+      <button class="hex-btn hex-md" data-action="stay">I'M HERE</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" aria-live="polite"></div>
+
+  <script src="js/processors.js"></script>
+  <script src="js/game.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
