@@ -88,7 +88,7 @@ function canvasTex(w, h, draw, { repeat = false, srgb = true } = {}) {
 }
 
 /* ====================================================================== */
-function createGame({ root, canvas, onActivity = () => {} }) {
+function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) {
   /* ------------------------------------------------------- renderer */
   let renderer;
   try {
@@ -801,7 +801,8 @@ function createGame({ root, canvas, onActivity = () => {} }) {
   let quality = 0, shake = 0, camInit = false, toastTimer = 0, zoneShown = false, nearLagHint = false;
   const keys = { left: false, right: false, gas: false, brake: false, boost: false };
   let viewW = 1, viewH = 1;
-  let lastActivityPing = 0;
+  let lastActivityPing = 0, rafCount = 0, rafT0 = 0, slowSecs = 0;
+  const portraitMQ = matchMedia('(orientation: portrait)');
 
   function inStutterZone() { return stage < 4 && P.s > CONG_START && P.s < CONG_END; }
 
@@ -990,7 +991,7 @@ function createGame({ root, canvas, onActivity = () => {} }) {
     const racing = phase === 'race';
     const finishing = phase === 'finishing' || phase === 'done';
     // --- longitudinal
-    const gas = racing && keys.gas, brk = racing && keys.brake;
+    const gas = racing && (keys.gas || document.body.classList.contains('touch')), brk = racing && keys.brake; // touch: auto-accelerate
     P.throttle = damp(P.throttle, gas ? 1 : 0, 10, dt);
     P.brake = damp(P.brake, (brk || finishing) ? 1 : 0, 12, dt);
     P.boosting = racing && keys.boost && P.boost > 2;
@@ -1195,6 +1196,7 @@ function createGame({ root, canvas, onActivity = () => {} }) {
     setText(hud.fps, String(fpsShown));
     // the number is always REAL measured FPS; the label says when a simulated limit is in effect
     setText(hud.fpsMode, phase === 'race' && (stage === 1 || inStutterZone()) ? 'SIMULATED' : 'REAL');
+    if (mg) drawMinimap(performance.now() / 1000);
   }
 
   /* ---- coin pickup feedback, before/after snapshots */
@@ -1219,6 +1221,12 @@ function createGame({ root, canvas, onActivity = () => {} }) {
   function tick(now) {
     raf = requestAnimationFrame(tick);
     const realDt = Math.min(.25, (now - lastT) / 1000 || 0);
+    // REAL rAF rate watchdog (independent of the simulated cap): <20 fps for 3 s -> 2D fallback
+    if (onFallback && (phase === 'tutorial' || phase === 'race') && now - tutorialStart > 1500) {
+      rafCount++;
+      if (now - rafT0 >= 1000) { slowSecs = rafCount * 1000 / (now - rafT0) < 20 ? slowSecs + 1 : 0; rafCount = 0; rafT0 = now; if (slowSecs >= 3) { stop(); onFallback('slow'); return; } }
+    } else { rafCount = 0; rafT0 = now; slowSecs = 0; }
+    if (document.body.classList.contains('touch') && portraitMQ.matches) { lastT = now; return; } // paused behind "rotate" overlay
     lastT = now;
     pending = Math.min(.25, pending + realDt);
 
@@ -1324,7 +1332,7 @@ function createGame({ root, canvas, onActivity = () => {} }) {
 
   const ro = new ResizeObserver(() => { if (running) applySize(); });
   ro.observe(root);
-  canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); stop(); hud.error.classList.add('show'); });
+  canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); stop(); onFallback ? onFallback('context-lost') : hud.error.classList.add('show'); });
 
   resetState();
   warmUp();

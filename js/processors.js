@@ -5,6 +5,8 @@
    Reference Guide / CES 2026 press deck, AMD's Ryzen AI 400 QRG, Qualcomm's
    Snapdragon X2 product pages, and independent reviews (sources at bottom).
 
+   laptop.models: real India models with that exact chip (prices = launch/
+   listed prices seen in 2026; they change, so confirm stock in store).
    The shopper is sold a LAPTOP, not a chip. Each tier has a `laptop` block
    that the recommendation and end screens lead with; chip specs sit behind a
    "Tech specs" toggle.
@@ -52,7 +54,7 @@ window.PROCESSOR_DATA = {
       id: 'everyday',
       family: 'Intel® Core™ Ultra 5',
       name: 'Intel® Core™ Ultra 5 processor',
-      model: '325',
+      model: '322',
       tagline: 'A smart, light AI laptop for study and everyday life',
       image: 'assets/chip-ultra5.svg',
       accent: '#8fd3ff',
@@ -65,18 +67,18 @@ window.PROCESSOR_DATA = {
           { icon: 'shield', text: 'On-device AI keeps working without internet' },
           { icon: 'apps',   text: 'Runs every Windows app natively' }
         ],
-        examples: [
-          { name: 'Dell XPS 14',                  note: 'Core Ultra 5 325 configuration' },
-          { name: 'Lenovo IdeaPad Slim 3 Gen 11', note: 'Core Ultra Series 3' },
-          { name: 'Samsung Galaxy Book6',         note: 'Core Ultra 5 / 7 options' }
+        models: [
+          { brand: 'Lenovo', name: 'IdeaPad Slim 5 (14", OLED)', sku: '83S5005LIN', cpu: 'Core Ultra 5 322', memory: '16GB / 512GB', price: '₹1,26,990', hero: true },
+          { brand: 'Lenovo', name: 'IdeaPad Slim 5 (16", 120Hz)', sku: '83S6007TIN', cpu: 'Core Ultra 5 322', memory: '16GB / 512GB', price: '₹1,21,990' },
+          { brand: 'HP',     name: 'OmniBook 5 OLED 14',          sku: '14-hh0099TU', cpu: 'Core Ultra 5 322', memory: '16GB', price: '' }
         ],
-        alsoIn: 'Also great with Core Ultra 5 335 / 332 / 322'
+        alsoIn: 'Also great with Core Ultra 5 325 / 335 / 332'
       },
       specs: [
-        { key: true, label: 'CPU cores',       value: '8' },
-        { key: true, label: 'Max turbo',       value: '4.5 GHz' },
-        { key: true, label: 'AI engine (NPU)', value: '47 TOPS' },
-        { key: true, label: 'Graphics',        value: 'Intel Graphics, 4 Xe3 cores' },
+        { key: true, label: 'CPU cores',       value: '6' },
+        { key: true, label: 'Max turbo',       value: '4.4 GHz' },
+        { key: true, label: 'AI engine (NPU)', value: '46 TOPS' },
+        { key: true, label: 'Graphics',        value: 'Intel Graphics, 2 Xe3 cores' },
         { label: 'Copilot+ PC',                value: 'Yes' },
         { label: 'Generation',                 value: 'Core Ultra Series 3' }
       ],
@@ -104,9 +106,10 @@ window.PROCESSOR_DATA = {
           { icon: 'bolt',   text: 'Up to 4.7 GHz for smooth multitasking' },
           { icon: 'apps',   text: 'Runs every Windows app natively' }
         ],
-        examples: [
-          { name: 'Dell XPS 13 (2026)',   note: 'Core Ultra 7 Series 3' },
-          { name: 'Samsung Galaxy Book6', note: 'Core Ultra 7 options' }
+        models: [
+          { brand: 'Samsung', name: 'Galaxy Book6 (14")',          sku: 'NP740VJG-KG2IN', cpu: 'Core Ultra 7 355', memory: '16GB / 512GB', price: '₹1,24,990', hero: true, where: 'Reliance Digital' },
+          { brand: 'Lenovo',  name: 'IdeaPad Slim 5 (14", OLED)',  sku: '83S5005KIN',     cpu: 'Core Ultra 7 355', memory: '16GB / 512GB', price: '₹1,36,990' },
+          { brand: 'Lenovo',  name: 'Yoga Slim 7 Aura Edition',    sku: '83QM0048IN',     cpu: 'Core Ultra 7 355', memory: '16GB / 512GB', price: '₹1,60,990' }
         ],
         alsoIn: 'Also great with Core Ultra 7 365 or Core Ultra 7 258V'
       },
@@ -142,7 +145,11 @@ window.PROCESSOR_DATA = {
           { icon: 'ai',     text: '50 TOPS AI engine for creative AI tools' },
           { icon: 'apps',   text: 'Runs pro apps and plug-ins natively' }
         ],
-        examples: [],  // confirm models with the store's stock
+        models: [
+          { brand: 'Samsung', name: 'Galaxy Book6 Pro (14")',      sku: 'NP940XJG-KG3',     cpu: 'Core Ultra 7 356H', memory: '16GB / 512GB', price: '₹1,69,990', hero: true },
+          { brand: 'ASUS',    name: 'ExpertBook P5 (14")',          sku: 'P5405CAA-NZ0099WS', cpu: 'Core Ultra 7 356H', memory: '32GB / 1TB', price: '₹1,90,990' },
+          { brand: 'Lenovo',  name: 'Yoga Pro 7i Gen 11 Aura Edition', sku: '83SN000HIN',   cpu: 'Core Ultra 7 356H', memory: '32GB / 1TB', price: '' }
+        ],
         alsoIn: 'Also great with Core Ultra 7 366H, or Core Ultra 5 338H if you game too'
       },
       specs: [
@@ -177,10 +184,10 @@ window.PROCESSOR_DATA = {
           { icon: 'ai',     text: 'XeSS AI upscaling and frame generation' },
           { icon: 'bolt',   text: '180 TOPS of total AI power' }
         ],
-        examples: [
-          { name: 'HP OmniBook 7 OLED',    note: 'Core Ultra X7 358H' },
-          { name: 'Dell XPS 14 / XPS 16',  note: 'X7 358H or X9 388H' },
-          { name: 'ASUS ExpertBook Ultra', note: 'Core Ultra X7 358H' }
+        models: [
+          { brand: 'Dell', name: 'XPS 16 (2026)',      sku: 'CDA16260CTO03MINO', cpu: 'Core Ultra X9 388H', memory: '', price: '', hero: true },
+          { brand: 'HP',   name: 'OmniBook 7 OLED 14', sku: '14-hg0062TU',       cpu: 'Core Ultra X7 358H (same Arc B390)', memory: '32GB / 1TB', price: '₹2,49,990' },
+          { brand: 'Dell', name: 'XPS 16 (2026)',      sku: 'DA16260',           cpu: 'Core Ultra X7 358H (same Arc B390)', memory: '32GB / 1TB', price: '₹3,28,490' }
         ],
         alsoIn: 'Also great with Core Ultra X7 358H / 368H (same Arc B390 graphics)'
       },
@@ -208,9 +215,9 @@ window.PROCESSOR_DATA = {
       competitorImage: 'assets/chip-competitor.svg',
       rows: [
         { label: 'Windows apps & games', intel: 'Run natively', competitor: 'Mostly emulated; some online games won’t start', winner: 'intel', matters: ['studying', 'gaming', 'entertainment', 'browsing'] },
-        { label: 'CPU cores',            intel: '8',            competitor: '6',        winner: 'intel',      matters: ['studying', 'work'] },
-        { label: 'Max CPU speed',        intel: '4.5 GHz',      competitor: '4.0 GHz',  winner: 'intel',      matters: ['browsing', 'studying'] },
-        { label: 'AI engine (NPU)',      intel: '47 TOPS',      competitor: '80 TOPS',  winner: 'competitor', matters: [] },
+        { label: 'Max CPU speed',        intel: '4.4 GHz',      competitor: '4.0 GHz',  winner: 'intel',      matters: ['browsing', 'studying'] },
+        { label: 'CPU cores',            intel: '6',            competitor: '6',        winner: 'tie',        matters: [] },
+        { label: 'AI engine (NPU)',      intel: '46 TOPS',      competitor: '80 TOPS',  winner: 'competitor', matters: [] },
         { label: 'Copilot+ PC',          intel: 'Yes',          competitor: 'Yes',      winner: 'tie',        matters: [] }
       ],
       advantages: ['Every Windows app and game runs natively. No emulation surprises.']
@@ -261,6 +268,6 @@ window.PROCESSOR_DATA = {
     'PC Gamer Panther Lake benchmarks: Arc B390 vs Radeon 890M',
     'TweakTown / Hardware Canucks: ARC Raiders, PUBG, Battlefield 6 failed to load on Snapdragon X2 Elite',
     'Intel XeSS 3 developer page (multi-frame generation on Intel hardware)',
-    'India listings: 91mobiles, Fonearena, techstoriesindia, smartprix (2026)'
+    'India listings: Reliance Digital, smartprix, techstoriesindia, 91mobiles, Samsung India newsroom (2026)'
   ]
 };

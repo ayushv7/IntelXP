@@ -66,9 +66,9 @@ const actions = {
     }
     show('quiz');
   },
-  'exit-game': () => { game?.stop(); show('select'); },
-  'race-again': () => game?.restart(),
-  'finish-game': () => { game?.stop(); markComplete('gaming'); show('select'); },
+  'exit-game': () => { race()?.stop(); show('select'); },
+  'race-again': () => race()?.restart(),
+  'finish-game': () => { race()?.stop(); $('#game-error').classList.remove('show'); markComplete('gaming'); show('select'); },
   'back-select': () => show('select'),
   'finish-quiz': (btn) => {
     if (!state.answers.size) {
@@ -118,7 +118,7 @@ function markComplete(id) {
 }
 
 function resetAll() {
-  game?.stop();
+  game?.stop(); race2d?.stop();
   window.Minis?.stop();
   state.unlocked = false;
   state.completed.clear();
@@ -184,6 +184,7 @@ function computeTier(answers) {
 const labelFor = id => DATA.useCases.find(u => u.id === id)?.label || id;
 const listText = names => names.length > 1 ? names.slice(0, -1).join(', ') + ' & ' + names[names.length - 1] : (names[0] || '');
 const chipName = p => `${p.family} ${p.model}`.trim();
+const heroOf = L => (L.models || []).find(m => m.hero) || (L.models || [])[0];
 /** The shopper's pick that best explains this tier (falls back to their first pick). */
 function topPick(tier, picks) {
   return picks.find(id => (DATA.tierRules[tier] || []).includes(id)) || picks[0];
@@ -237,6 +238,16 @@ function renderRecommendation() {
   $('#rec-art').style.setProperty('--accent', p.accent);
   $('#rec-name').textContent = L.title;
   $('#rec-sub').textContent = `with ${chipName(p)}`;
+  const hero = heroOf(L), others = (L.models || []).filter(m => m !== hero).slice(0, 2);
+  $('#rec-pick').hidden = !hero;
+  $('#rec-art-name').textContent = hero ? `${hero.brand} ${hero.name}` : '';
+  if (hero) {
+    $('#pick-name').textContent = `${hero.brand} ${hero.name}`;
+    $('#pick-meta').textContent = [hero.sku, hero.cpu, hero.memory, hero.price && `from ${hero.price}`].filter(Boolean).join(' · ');
+    const sameChip = others.every(m => m.cpu === hero.cpu);
+    $('#pick-also').innerHTML = others.length ? `<span>${sameChip ? 'Also with this chip:' : 'Also consider:'}</span>` +
+      others.map(m => `<span class="also-chip">${esc(m.brand)} ${esc(m.name)}${m.cpu !== hero.cpu ? ` · ${esc(m.cpu.replace(/^Core Ultra /, ''))}` : ''}</span>`).join('') : '';
+  }
   $('#rec-benefits').innerHTML = L.benefits.slice(0, 3).map(b =>
     `<li><span class="b-ico" style="--accent:${esc(p.accent)}">${lineIcon(b.icon)}</span><span>${esc(b.text)}</span></li>`).join('');
   const lead = topPick(state.tier, picks);
@@ -254,7 +265,8 @@ function renderComparison() {
   const c = DATA.comparisons[state.tier];
   const picks = [...state.answers];
   const article = /^[aeiou]|^(AMD|HP|LG|MSI)\b/i.test(c.competitorName) ? 'an' : 'a';
-  $('#cmp-title').innerHTML = `Intel AI laptop <span class="vs">vs</span> ${article} ${esc(c.competitorName)} laptop`;
+  const hero = heroOf(p.laptop);
+  $('#cmp-title').innerHTML = `${hero ? esc(hero.brand + ' ' + hero.name) : 'Intel AI laptop'} <span class="vs">vs</span> ${article} ${esc(c.competitorName)} laptop`;
   $('#cmp-chips').innerHTML = `<span class="intel">${esc(chipName(p))}</span><span class="sep">vs</span><span>${esc(c.competitorName)}</span>`;
 
   const hits = r => (r.matters || []).filter(m => picks.includes(m));
@@ -293,10 +305,10 @@ function renderEnd() {
   const p = DATA.processors[state.tier];
   const L = p.laptop;
   $('#end-art').innerHTML = laptopSVG(L.title, p.accent, { small: true });
-  $('#end-ask').innerHTML = `Ask for: <b>${esc(L.title)}</b> with ${esc(chipName(p))}`;
-  const ex = (L.examples || []).slice(0, 3);
-  $('#end-examples').hidden = !ex.length;
-  $('#end-chips').innerHTML = ex.map(e => `<li><b>${esc(e.name)}</b><span>${esc(e.note)}</span></li>`).join('');
+  const hero = heroOf(L);
+  $('#end-ask').innerHTML = hero ? `Ask for: <b>${esc(hero.brand)} ${esc(hero.name)}</b> (${esc(hero.sku)})` : `Ask for: <b>${esc(L.title)}</b> with ${esc(chipName(p))}`;
+  $('#end-price').hidden = !(hero && hero.price);
+  $('#end-price').textContent = hero && hero.price ? `${hero.price} · Price seen online in 2026, check today's price in store.` : '';
 }
 
 /* ------------------------------------------------- sheets & overlays */
@@ -320,8 +332,31 @@ document.addEventListener('click', e => {
 let game = null;
 let gameModulePromise = null;
 
+// ?mode=2d forces the 2D canvas race; ?mode=3d disables the automatic fallback (testing)
+const RACE_MODE = new URLSearchParams(location.search).get('mode');
+let race2d = null, use2d = RACE_MODE === '2d';
+const race = () => (use2d ? race2d : game);
+
+function start2D(reason) {
+  if (reason) console.info('Race: using 2D canvas version (' + reason + ')');
+  use2d = true;
+  game?.stop();
+  $('#game-loading').classList.remove('show');
+  $('#game-canvas').hidden = true;
+  $('#game-canvas-2d').hidden = false;
+  try {
+    race2d ||= window.createRace2D({ root: $('#game-root'), canvas: $('#game-canvas-2d'), onActivity: bumpActivity });
+  } catch (err) { // only if even a 2D canvas is impossible
+    console.error('2D race failed:', err);
+    $('#game-error').classList.add('show');
+    return;
+  }
+  if (state.screen === 'game') race2d.restart();
+}
+
 async function startGame() {
   show('game');
+  if (use2d) { start2D(); return; }
   const loading = $('#game-loading');
   try {
     if (!game) {
@@ -331,21 +366,20 @@ async function startGame() {
       game = mod.createGame({
         root: $('#game-root'),
         canvas: $('#game-canvas'),
-        onActivity: bumpActivity
+        onActivity: bumpActivity,
+        onFallback: RACE_MODE === '3d' ? null : (why) => start2D(why)
       });
     }
     loading.classList.remove('show');
+    $('#game-canvas').hidden = false;
+    $('#game-canvas-2d').hidden = true;
     if (state.screen !== 'game') return; // user left while loading
     game.restart();
   } catch (err) {
-    console.error('Game failed to start:', err);
+    console.warn('3D race unavailable:', err);
     gameModulePromise = null;
     game = null;
-    loading.classList.remove('show');
-    $('#game-error-msg').textContent = (err && err.message && /webgl/i.test(err.message))
-      ? 'WebGL is not available on this device. You can still continue the experience.'
-      : 'The 3D engine could not load (check the internet connection). You can still continue the experience.';
-    $('#game-error').classList.add('show');
+    start2D(/webgl/i.test(String(err && err.message)) ? 'no WebGL' : '3D engine failed to load');
   }
 }
 
@@ -455,7 +489,7 @@ drawPixelChip();
 startStars();
 // Warm the 3D engine download in the background so the race starts fast.
 setTimeout(() => {
-  if (gameModulePromise) return;
+  if (gameModulePromise || use2d) return;
   gameModulePromise = window.loadGameModule();
   gameModulePromise.catch(e => { gameModulePromise = null; console.warn('3D engine prefetch failed (will retry on play):', e); });
 }, 1200);

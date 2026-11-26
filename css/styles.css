@@ -558,3 +558,52 @@ kbd { display: inline-block; padding: 3px 6px; margin: 0 1px; border: 1px solid 
 .os-notes { display: flex; justify-content: center; gap: 24px; }
 .note-card { min-height: 80px; min-width: 190px; display: grid; place-items: center; padding: 12px 20px; border-radius: 12px; background: #fff7c2; color: #3a2a00; font: 700 18px var(--font-ui); box-shadow: 0 6px 16px rgba(0,0,0,.35); cursor: grab; touch-action: none; position: relative; z-index: 3; }
 .note-card.drag { cursor: grabbing; box-shadow: 0 14px 30px rgba(0,0,0,.45); z-index: 9; }
+
+/* ---------- 2D fallback race canvas ---------- */
+.canvas-2d { position: absolute; inset: 0; width: 100%; height: 100%; display: block; image-rendering: pixelated; }
+
+/* ---------- Minimap: small, unframed, hidden on narrow screens ---------- */
+.hud > .hud-br { width: 120px; height: 120px; opacity: .7; box-shadow: none; border-radius: 50%; }
+@media (max-width: 699px) { .hud > .hud-br { display: none; } }
+
+/* ---------- Touch controls (touch devices only): steer left, boost/brake right ---------- */
+.tc-btn { width: 96px; height: 96px; font-size: 26px; background: rgba(4, 14, 34, .38); border-color: rgba(255, 255, 255, .45); opacity: .85; }
+.tc-btn.tc-boost { width: 96px; height: 96px; font-size: 11px; }
+.tc-btn.tc-small { width: 72px; height: 72px; font-size: 9px; }
+.tc-left, .tc-right { gap: 18px; }
+body.touch .hud > .hud-bl, body.touch .hud > .hud-br { bottom: calc(var(--edge) + 112px); }
+@media (max-height: 560px) and (orientation: landscape) {
+  .tc-btn, .tc-btn.tc-boost { width: 80px; height: 80px; }
+  .tc-btn.tc-small { width: 72px; height: 72px; }
+  body.touch .hud > .hud-bl, body.touch .hud > .hud-br { bottom: var(--edge); }
+  body.touch .hud > .hud-bl { left: calc(var(--edge) + 190px); }
+  body.touch .hud > .hud-br { right: calc(var(--edge) + 190px); }
+}
+.rotate-overlay { position: absolute; inset: 0; z-index: 30; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 22px; background: rgba(2, 8, 20, .94); color: var(--white); }
+.rotate-overlay p { margin: 0; font-size: 16px; }
+.rot-phone { width: 54px; height: 92px; border: 4px solid var(--cyan); border-radius: 12px; animation: rot 2s ease-in-out infinite; }
+@keyframes rot { 40%, 100% { transform: rotate(-90deg); } }
+@media (orientation: portrait) { body.touch .rotate-overlay { display: flex; } }
+
+/* ---------- Real laptops on rec / end ---------- */
+.rec-fig { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 12px; justify-self: center; width: 100%; max-width: 560px; }
+.rec-fig figcaption { font-size: var(--fs-label); color: var(--muted); text-align: center; }
+.pick { display: grid; gap: 4px; }
+.pick-label { margin: 0; font-size: var(--fs-small); color: var(--gold); font-weight: 600; letter-spacing: .06em; }
+.pick-name { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: clamp(24px, 1.9vw, 36px); line-height: 1.15; }
+.pick-meta { margin: 0; font-size: var(--fs-small); color: var(--muted); }
+.pick-also { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; font-size: var(--fs-small); color: var(--muted); }
+.also-chip { padding: 5px 12px; border-radius: 999px; border: 1px solid rgba(255, 255, 255, .16); background: rgba(255, 255, 255, .05); color: #d7e6fa; }
+.rec-info .btn-row { flex-wrap: nowrap; gap: 20px; }
+.rec-info .hex-lg { padding-inline: calc(var(--h) + 26px); }
+.rec-info .hex-md { padding-inline: calc(var(--h) + 18px); }
+.end-price { margin: 8px 0 0; font-size: var(--fs-label); color: var(--muted); }
+@media (max-height: 760px) and (min-width: 1000px) {
+  .rec-info { gap: 10px; }
+  .benefits { gap: 6px; }
+  .b-ico { width: 42px; height: 42px; }
+}
+@media (max-width: 900px), (max-height: 500px) {
+  .corner-btn, .icon-btn { width: 56px; height: 56px; }
+  .screen.modern { padding-top: 92px; }
+}

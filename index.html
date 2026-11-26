@@ -88,6 +88,7 @@
     <section class="screen pixel game-screen" id="screen-game" data-screen="game">
       <div id="game-root" class="game-root">
         <canvas id="game-canvas"></canvas>
+        <canvas id="game-canvas-2d" class="canvas-2d" hidden></canvas>
 
         <!-- HUD: minimal, edge-anchored, no heavy panels -->
         <div class="hud" id="hud" aria-live="off">
@@ -109,6 +110,7 @@
             <b id="hud-fps">--</b><span>FPS</span><em id="hud-fpsmode">SIMULATED</em>
           </div>
           <div class="hud-bl hud-speed"><b id="hud-speed">0</b><span>KM/H</span></div>
+          <div class="hud-br"><canvas id="minimap" width="120" height="120"></canvas></div>
         </div>
         <canvas class="wipe" id="wipe" aria-hidden="true"></canvas>
         <div class="flash" id="flash" aria-hidden="true"></div>
@@ -122,9 +124,9 @@
           <div class="tc-right">
             <button class="tc-btn tc-small" data-key="brake" aria-label="Brake">BRAKE</button>
             <button class="tc-btn tc-boost" data-key="boost" aria-label="Boost">BOOST</button>
-            <button class="tc-btn tc-gas" data-key="gas" aria-label="Accelerate">GAS</button>
           </div>
         </div>
+        <div class="rotate-overlay" aria-live="polite"><div class="rot-phone" aria-hidden="true"></div><p>Rotate your phone</p></div>
 
         <!-- Overlays -->
         <div class="game-overlay" id="game-tutorial">
@@ -192,11 +194,17 @@
     <section class="screen modern" id="screen-rec" data-screen="rec">
       <button class="corner-btn" data-action="back-quiz" aria-label="Edit answers" title="Edit answers">◀</button>
       <div class="modern-inner rec-inner">
-        <div class="rec-art" id="rec-art"></div>
+        <figure class="rec-fig"><div class="rec-art" id="rec-art"></div><figcaption id="rec-art-name"></figcaption></figure>
         <div class="rec-info">
           <p class="kicker">YOUR AI LAPTOP</p>
           <h1 class="m-h1" id="rec-name">AI Laptop</h1>
           <p class="rec-sub" id="rec-sub"></p>
+          <div class="pick" id="rec-pick">
+            <p class="pick-label">Our pick:</p>
+            <p class="pick-name" id="pick-name"></p>
+            <p class="pick-meta" id="pick-meta"></p>
+            <div class="pick-also" id="pick-also"></div>
+          </div>
           <ul class="benefits" id="rec-benefits"></ul>
           <p class="rec-why" id="rec-why"></p>
           <div class="btn-row">
@@ -229,11 +237,7 @@
         <h1 class="m-h1 end-title">Thank you for shopping with us!</h1>
         <div class="end-card">
           <div class="end-art" id="end-art"></div>
-          <p class="end-ask" id="end-ask"></p>
-        </div>
-        <div class="end-examples" id="end-examples">
-          <p class="label">Examples in India: check today's stock</p>
-          <ul class="ex-chips" id="end-chips"></ul>
+          <div><p class="end-ask" id="end-ask"></p><p class="end-price" id="end-price"></p></div>
         </div>
         <p class="end-cta">Show this screen to a store associate.</p>
         <button class="hex-btn hex-lg" data-action="restart">↻ RESTART</button>
@@ -276,6 +280,7 @@
   <script src="js/processors.js"></script>
   <script src="js/game.js"></script>
   <script src="js/minis.js"></script>
+  <script src="js/race2d.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
