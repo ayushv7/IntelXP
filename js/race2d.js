@@ -324,7 +324,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
       }
       nextTrafficS += inZone ? rand(26, 40) : rand(80, 130);
     }
-    for (const c of traffic) { c.s += c.v * dt; if (P.hitCd <= 0 && Math.abs(c.s - P.s) < 4.2 && Math.abs(c.d - P.d) < 1.95) { hit(c.d); c.v = Math.max(c.v, P.v + 6); } }
+    for (const c of traffic) { c.s += c.v * dt; if (P.hitCd <= 0 && Math.abs(c.s - P.s) < 4.2 && Math.abs(c.d - P.d) < 1.95) { hit(c.d); c.v = Math.max(c.v, P.v + 14); c.s += 3; c.d = clamp(c.d + (c.d >= P.d ? 2.4 : -2.4), -7.5, 7.5); } }
     traffic = traffic.filter(c => c.s > P.s - 40 && c.s < P.s + 700);
     for (const o of obstacles) {
       if (o.hit) { o.fly = Math.max(0, o.fly + dt * 6); continue; }
