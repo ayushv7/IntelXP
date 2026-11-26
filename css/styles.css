@@ -773,3 +773,11 @@ body.touch .hud > .hud-bl, body.touch .hud > .hud-br { bottom: calc(var(--edge) 
 @media (max-height: 500px) { .lap-lid { width: min(100cqw, (100cqh - 30px) * 1.48); } }
 .lap-base { width: calc(min(100cqw, (100cqh - 46px) * 1.48) * 1.07); max-width: 100%; }
 @media (max-height: 500px) { .lap-base { width: calc(min(100cqw, (100cqh - 30px) * 1.48) * 1.07); } }
+
+/* sound toggle */
+.kiosk-bar { display: flex; gap: 12px; }
+#btn-sound .cross { display: none; }
+#btn-sound.off .cross { display: inline; } #btn-sound.off .wave { display: none; } #btn-sound.off { color: var(--muted); }
+.mini-top { padding-right: 190px; }
+@media (max-width: 900px), (max-height: 500px) { .mini-top { padding-right: 140px; } }
+.cmp-title { max-width: calc(100vw - 420px); }

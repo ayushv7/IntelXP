@@ -25,6 +25,9 @@
 
   <!-- Global kiosk control (hidden in-game) -->
   <div class="kiosk-bar">
+    <button class="icon-btn" id="btn-sound" aria-label="Mute sound" title="Sound on">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="currentColor" d="M4 9h4l5-4v14l-5-4H4z"/><path class="wave" fill="none" stroke="currentColor" stroke-width="2" d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12"/><path class="cross" fill="none" stroke="currentColor" stroke-width="2" d="M16 9l5 6M21 9l-5 6"/></svg>
+    </button>
     <button class="icon-btn" id="btn-fullscreen" aria-label="Toggle fullscreen" title="Fullscreen">
       <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-width="2" d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>
     </button>
@@ -274,6 +277,7 @@
 
   <script src="js/processors.js"></script>
   <script src="js/game.js"></script>
+  <script src="js/sfx.js"></script>
   <script src="js/minis.js"></script>
   <script src="js/race2d.js"></script>
   <script src="js/app.js"></script>

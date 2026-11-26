@@ -1055,6 +1055,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
   function penalize(j) {
     shake = Math.max(shake, clamp(j / 30000, .35, 1.2));
     if (P.hitCd > 0) return;
+    window.SFX?.crash(j / 40000);
     P.hits++; P.hitCd = .9; P.penalty += 1; P.score = Math.max(0, P.score - 150);
     showMiniToast('+1s  COLLISION');
   }
@@ -1092,7 +1093,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     }
   }
   function knock(o, vs, vd) {
-    o.hit = true;
+    o.hit = true; window.SFX?.knock();
     const f = frame(o.s, o.d, tmpF), fwd = new THREE.Vector3(f.nz, 0, -f.nx), right = new THREE.Vector3(f.nx, 0, f.nz);
     for (const ch of [...o.g.children]) {
       scene.attach(ch);
@@ -1232,6 +1233,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
   let quality = 0, shake = 0, camInit = false, toastTimer = 0, zoneShown = false, nearLagHint = false;
   const keys = { left: false, right: false, gas: false, brake: false, boost: false };
   let viewW = 1, viewH = 1;
+  let wasBoosting = false;
   let lastActivityPing = 0, rafCount = 0, rafT0 = 0, slowSecs = 0;
   const portraitMQ = matchMedia('(orientation: portrait)');
 
@@ -1369,6 +1371,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
   }
   function collectUpgrade(u) {
     u.taken = true; u.g.visible = false;
+    window.SFX?.upgrade(P.ups);
     const i = P.ups; P.ups++; P.coins++; P.score += 1000;
     P.boost = Math.min(100, P.boost + 40); P.fuel = Math.min(100, P.fuel + 15);
     slots[i]?.classList.add('on'); retrigger(slots[i], 'pop'); cps[i]?.classList.add('got');
@@ -1469,6 +1472,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
       const sg = Math.sign(P.d); P.d = sg * PLAYER_LIMIT;
       if (P.vd * sg > 0) { if (Math.abs(P.vd) > 2) shake = Math.max(shake, .35); P.vd = -P.vd * .4; }
       P.v -= P.v * .35 * dt;
+      if (P.v > 8) window.SFX?.scrape();
       if (P.v > 8 && Math.random() < .7) { const sf = frame(P.s + rand(-1.5, 1.5), sg * (PLAYER_LIMIT + .9), tmpF); burst(sf.x, .5, sf.z, 2, [C_GOLD, C_WHITE], 6, .35); }
     }
     P.hitCd = Math.max(0, P.hitCd - dt);
@@ -1514,7 +1518,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
       const ds = c.s - P.s;
       c.m.visible = ds > -10 && ds < 520;
       if (Math.abs(ds) < 2.6 && Math.abs(c.d - P.d) < 1.9) {
-        c.taken = true; c.m.visible = false; P.coins++; P.score += 100;
+        c.taken = true; c.m.visible = false; P.coins++; P.score += 100; window.SFX?.coin();
         P.boost = Math.min(100, P.boost + 12); P.fuel = Math.min(100, P.fuel + 4);
         burst(c.m.position.x, 1, c.m.position.z, 24, [C_GOLD, C_WHITE], 7, .6);
       }
@@ -1549,7 +1553,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
 
     // --- finish
     if (racing && P.s >= TRACK_LEN) {
-      phase = 'finishing'; finishAt = performance.now();
+      phase = 'finishing'; finishAt = performance.now(); window.SFX?.finish();
       const f = frame(TRACK_LEN, 0, tmpF);
       burst(f.x, 4, f.z, 260, [C_GOLD, C_CYAN, C_WHITE, C_PURPLE], 18, 1.6);
     }
@@ -1715,7 +1719,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
       if (el >= TUTORIAL_MS) {
         phase = 'race';
         hud.tutorial.classList.remove('show');
-        hud.go.classList.remove('show'); void hud.go.offsetWidth; hud.go.classList.add('show');
+        hud.go.classList.remove('show'); void hud.go.offsetWidth; hud.go.classList.add('show'); window.SFX?.go();
       }
     }
 
@@ -1757,6 +1761,13 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     renderer.shadowMap.needsUpdate = true;
     if (stage >= 4) composer.render(dt); else renderer.render(scene, camera);
     updateHUD();
+    // sound: engine pitch follows speed (real sim, so it also stutters in the lag zone), tyre skid, boost whoosh
+    if (window.SFX) {
+      SFX.engine(Math.abs(P.v) / V_BOOST, P.boosting, phase === 'race' || phase === 'finishing' || phase === 'tutorial');
+      SFX.skid(phase === 'race' && ((P.slip > 2.2 && P.v > 30) || (P.brake > .7 && P.v > 25)) ? 1 : 0);
+      if (P.boosting && !wasBoosting) SFX.boost();
+      wasBoosting = P.boosting;
+    }
     if (!shotBefore && stage === 1 && phase === 'race' && P.time > 1.2) { shotBefore = true; snap('res-before'); }
     if (wantAfterShot) { wantAfterShot = false; snap('res-after'); hud.results.classList.add('show'); }
 
@@ -1805,7 +1816,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
   }
   function stop() {
     running = false; phase = 'idle';
-    cancelAnimationFrame(raf); raf = 0;
+    cancelAnimationFrame(raf); raf = 0; window.SFX?.stopLoops();
     Object.keys(keys).forEach(k => keys[k] = false);
     hud.tutorial.classList.remove('show');
     hud.results.classList.remove('show');

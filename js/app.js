@@ -60,7 +60,7 @@ const actions = {
   },
   next: (btn) => {
     if (!state.unlocked) {
-      shake(btn);
+      shake(btn); window.SFX?.error();
       toast('Play a mission first to unlock NEXT');
       return;
     }
@@ -86,7 +86,7 @@ const actions = {
   sources: () => showSheet('sources-sheet'),
   'close-sheet': () => closeSheet(),
   'back-rec': () => { closeSheet(); show('rec'); },
-  end: () => { closeSheet(); renderEnd(); show('end'); },
+  end: () => { closeSheet(); renderEnd(); show('end'); window.SFX?.jingle(); },
   restart: () => resetAll(),
   stay: () => bumpActivity()
 };
@@ -95,7 +95,7 @@ document.addEventListener('click', e => {
   const btn = e.target.closest('[data-action]');
   if (!btn) return;
   const fn = actions[btn.dataset.action];
-  if (fn) fn(btn);
+  if (fn) { window.SFX?.click(); fn(btn); }
 });
 
 document.addEventListener('keydown', e => {
@@ -107,6 +107,7 @@ document.addEventListener('keydown', e => {
 function markComplete(id) {
   state.completed.add(id);
   const wasUnlocked = state.unlocked;
+  if (!wasUnlocked) setTimeout(() => window.SFX?.unlock(), 350);
   state.unlocked = true;
   const card = $(`.mission[data-action="play-${id}"]`);
   card?.classList.add('done');
@@ -160,6 +161,7 @@ function buildQuiz() {
     const id = opt.dataset.id;
     const on = !state.answers.has(id);
     on ? state.answers.add(id) : state.answers.delete(id);
+    window.SFX?.tick();
     opt.setAttribute('aria-pressed', String(on));
     $('#quiz-msg').textContent = state.answers.size ? `${state.answers.size} selected` : '';
   });
@@ -397,6 +399,10 @@ function toggleFullscreen() {
   } catch { toast('Fullscreen not supported'); }
 }
 $('#btn-fullscreen').addEventListener('click', toggleFullscreen);
+const soundBtn = $('#btn-sound');
+const paintSound = () => { const m = window.SFX?.muted; soundBtn.classList.toggle('off', !!m); soundBtn.setAttribute('aria-label', m ? 'Unmute sound' : 'Mute sound'); soundBtn.title = m ? 'Sound off' : 'Sound on'; };
+soundBtn.addEventListener('click', () => { window.SFX?.toggleMute(); paintSound(); if (!window.SFX?.muted) window.SFX?.tick(); });
+if (!window.SFX) soundBtn.hidden = true; else paintSound();
 if (!document.fullscreenEnabled && !document.webkitFullscreenEnabled) $('#btn-fullscreen').style.display = 'none';
 
 /* ------------------------------------------------------- idle / kiosk */

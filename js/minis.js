@@ -71,7 +71,7 @@ window.Minis = (() => {
       const t = (now - startT) / 1000;
       ui.timeBar.style.transform = `scaleX(${Math.min(1, t / DURATION)})`;
       tick(Math.min(t, DURATION), dt, now / 1000);
-      if (t >= DURATION) { ended = true; ui.end.classList.add('show'); }
+      if (t >= DURATION) { ended = true; ui.end.classList.add('show'); window.SFX?.stopLoops(); window.SFX?.jingle(); }
     };
     cur.raf = requestAnimationFrame(loop);
   }
@@ -139,12 +139,13 @@ window.Minis = (() => {
       if (k === 'messy') room.classList.add('messy');
       if (k === 'dog') { dog.hidden = false; dogUntil = performance.now() + 7000; }
       if (k === 'talker') talkFast = performance.now() + 6000;
+      window.SFX?.pop();
       const d = h(`<button class="bb-distraction" style="left:${x}%;top:${y}%"><span>${EFFECTS[k].icon}</span>${EFFECTS[k].label}</button>`);
       if (on.has(k)) { // always-on AI already handles it
         d.classList.add('handled'); d.innerHTML = '<span>✓</span>Handled by AI';
         call.append(d); later(() => d.remove(), 1600); return;
       }
-      d.addEventListener('click', () => { apply(k); d.classList.add('fixed'); later(() => d.remove(), 350); });
+      d.addEventListener('click', () => { window.SFX?.sparkle(); apply(k); d.classList.add('fixed'); later(() => d.remove(), 350); });
       call.append(d);
       later(() => { if (d.isConnected) { d.classList.add('gone'); later(() => d.remove(), 350); } }, 5500);
     };
@@ -290,7 +291,7 @@ window.Minis = (() => {
       notes.push(n);
       el.addEventListener('pointerdown', e => {
         if (n.done) return; e.preventDefault();
-        const d = deskRect(); n.held = true; n.ox = e.clientX - d.left - n.x; n.oy = e.clientY - d.top - n.y; n.tx = n.x; n.ty = n.y;
+        window.SFX?.paper(); const d = deskRect(); n.held = true; n.ox = e.clientX - d.left - n.x; n.oy = e.clientY - d.top - n.y; n.tx = n.x; n.ty = n.y;
         el.setPointerCapture(e.pointerId); el.classList.add('held');
       });
       el.addEventListener('pointermove', e => { if (!n.held) return; const d = deskRect(); n.tx = e.clientX - d.left - n.ox; n.ty = e.clientY - d.top - n.oy; });
@@ -303,16 +304,17 @@ window.Minis = (() => {
     }
     let offline = false, typing = [], typingEl = null;
     function summarise(n) {
-      n.done = true;
+      n.done = true; window.SFX?.chime();
       const lr = rel(screen), cx = lr.x + lr.w / 2 - n.w / 2, cy = lr.y + lr.h * .35 - n.h / 2;
       n.el.classList.add('snap');
       n.el.style.transform = `translate3d(${cx}px, ${cy}px, 0) rotate(0deg) scale(.2)`;
       screen.classList.remove('glow'); void screen.offsetWidth; screen.classList.add('glow');
       later(() => n.el.remove(), 450);
       typing.push({ bold: true, text: n.title + ': ' }, ...n.lines.map(l => ({ text: l + ' ' })), { br: true });
-      later(() => { shield.hidden = false; shield.classList.add('on'); }, 600);
+      later(() => { if (!shield.classList.contains('on')) window.SFX?.shield(); shield.hidden = false; shield.classList.add('on'); }, 600);
     }
     function bounceOffCloud(n) {
+      window.SFX?.error();
       brDrop.textContent = offline ? 'No connection' : 'Uploading… needs internet';
       browser.classList.remove('nope'); void browser.offsetWidth; browser.classList.add('nope');
       n.vx = -Math.abs(n.vx) - 380; n.vy = -520; n.va = rand(-300, 300);
@@ -352,7 +354,7 @@ window.Minis = (() => {
       if (it.br) { typing.shift(); typingEl = null; return; }
       if (!typingEl) { typingEl = h('<li></li>'); sum.append(typingEl); }
       if (!it.node) { it.node = it.bold ? h('<b></b>') : document.createTextNode(''); typingEl.append(it.node); it.pos = 0; }
-      it.pos = Math.min(it.text.length, it.pos + 1); it.node.textContent = it.text.slice(0, it.pos);
+      it.pos = Math.min(it.text.length, it.pos + 1); window.SFX?.type(); it.node.textContent = it.text.slice(0, it.pos);
       if (it.pos >= it.text.length) typing.shift();
     }
     const CAPS = ['Today: how plants make food.', 'Chlorophyll absorbs sunlight…', 'Water comes up from the roots.', 'Remember the three key steps.', 'Oxygen is released as a by-product.', 'Quiz on this next week!'];
@@ -378,23 +380,24 @@ window.Minis = (() => {
       tLight.style.opacity = String(tunnel);
       tLight.style.transform = `translate3d(${(1 - ((T * 1.6) % 1)) * 140 - 40}%, 0, 0)`;
       stepNotes(dt, T); stepTyping(); stepCaptions(T);
+      window.SFX?.rumble(ui.end.classList.contains('show') ? 0 : 1, tunnel);
     };
 
     run(ui, t => {
       // Wi-Fi drops bar by bar as the tunnel approaches; tunnel 7–21 s; no signal afterwards (rural line)
-      wifiBars.forEach((b, i) => b.classList.toggle('off', t > 5 + (2 - i) * .7));
+      wifiBars.forEach((b, i) => { const off = t > 5 + (2 - i) * .7; if (off && !b.classList.contains('off')) window.SFX?.beep(); b.classList.toggle('off', off); });
       if (!offline && t > 6.6) {
         offline = true; wifi.classList.add('lost'); wifi.querySelector('em').textContent = 'No signal';
         brStatus.textContent = '⚠ No connection'; brStatus.classList.add('bad');
         brDrop.textContent = 'No connection'; brCap.textContent = 'Captions unavailable offline'; brCap.classList.add('off');
       }
-      tunnelTarget = t > 7 && t < 21 ? 1 : 0;
+      const tt = t > 7 && t < 21 ? 1 : 0; if (tt !== tunnelTarget) window.SFX?.whoosh(); tunnelTarget = tt;
     }, ambient);
   }
 
   function stop() {
     if (!cur) return;
-    cancelAnimationFrame(cur.raf);
+    cancelAnimationFrame(cur.raf); window.SFX?.stopLoops();
     cur.timers.forEach(clearTimeout);
     cur.cleanup.forEach(fn => fn());
     cur = null;

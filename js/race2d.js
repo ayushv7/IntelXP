@@ -57,6 +57,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
   let stage = 1, phase = 'idle', running = false, raf = 0, lastT = 0, pending = 0, nextCap = 1 / 18, freezeUntil = 0;
   let tutorialStart = 0, finishAt = 0, nextTrafficS = 0, fpsFrames = 0, fpsT0 = 0, fpsShown = 0, shake = 0;
   let slowUntil = 0, wantAfterShot = false, shotBefore = false, toastTimer = 0, miniTimer = 0, zoneShown = false;
+  let wasBoost = false;
   let traffic = [], obstacles = [], coins = [], ups = [], parts = [];
   const portrait = matchMedia('(orientation: portrait)');
   const inStutter = () => stage < 4 && P.s > CONG_START && P.s < CONG_END;
@@ -281,7 +282,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
   function mini(tx, ms) { hud.zoneToast.innerHTML = tx; hud.zoneToast.classList.add('show'); clearTimeout(miniTimer); miniTimer = setTimeout(() => hud.zoneToast.classList.remove('show'), ms); }
   function snap(id) { const c = root.querySelector('#' + id); if (!c) return; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(canvas, 0, 0, c.width, c.height); }
   function collect(u) {
-    u.taken = true; const i = P.ups++;
+    u.taken = true; window.SFX?.upgrade(P.ups); const i = P.ups++;
     P.boost = Math.min(100, P.boost + 40);
     slots[i]?.classList.add('on'); retrigger(slots[i], 'pop'); cps[i]?.classList.add('got');
     setText(hud.system, UPGRADES[i].system); if (i === 2) hud.system.classList.add('ai');
@@ -294,6 +295,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
     if (stage === 4) { freezeUntil = 0; hud.zoneToast.classList.remove('show'); }
   }
   function hit(d) {
+    window.SFX?.crash(.7);
     P.hits++; P.hitCd = .9; P.v *= .45; shake = 1;
     P.d = clamp(P.d + (P.d >= d ? 1 : -1) * 1.2, -LIMIT, LIMIT);
     mini('+1s  COLLISION', 800);
@@ -337,7 +339,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
       if (P.hitCd <= 0 && Math.abs(o.s - P.s) < 2.8 && Math.abs(o.d - P.d) < 2.65) { o.hit = true; hit(o.d); }
     }
     for (const c of coins) if (!c.taken && Math.abs(c.s - P.s) < 2.6 && Math.abs(c.d - P.d) < 1.9) {
-      c.taken = true; P.boost = Math.min(100, P.boost + 12); const p = proj(c.s, c.d); if (p) burstAt(p.x, p.y - p.m, 8, ['#ffd25e', '#fff']);
+      c.taken = true; window.SFX?.coin(); P.boost = Math.min(100, P.boost + 12); const p = proj(c.s, c.d); if (p) burstAt(p.x, p.y - p.m, 8, ['#ffd25e', '#fff']);
     }
     const u = ups[P.ups];
     if (u && !u.taken) {
@@ -346,7 +348,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
       if ((Math.abs(ds) < 3.5 && Math.abs(u.d - P.d) < 2.6) || ds < -2) collect(u);
     }
     if (!zoneShown && stage < 4 && P.s > CONG_START - 10) { zoneShown = true; mini('⚠ CONGESTED ZONE<br>BACKGROUND TASKS ARE CAUSING LAG', 2600); }
-    if (racing && P.s >= TRACK_LEN) { phase = 'finishing'; finishAt = performance.now(); }
+    if (racing && P.s >= TRACK_LEN) { phase = 'finishing'; finishAt = performance.now(); window.SFX?.finish(); }
     if (phase === 'finishing' && (P.v < 1 || performance.now() - finishAt > 2600)) { phase = 'done'; wantAfterShot = true; }
   }
 
@@ -358,7 +360,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
     if (phase === 'tutorial') {
       const el = now - tutorialStart;
       hud.tutBar.style.width = Math.min(100, el / TUTORIAL_MS * 100) + '%';
-      if (el >= TUTORIAL_MS) { phase = 'race'; hud.tutorial.classList.remove('show'); retrigger(hud.go, 'show'); }
+      if (el >= TUTORIAL_MS) { phase = 'race'; hud.tutorial.classList.remove('show'); retrigger(hud.go, 'show'); window.SFX?.go(); }
     }
     // SIMULATED performance effects (time-based, same on every device)
     if (phase === 'race') {
@@ -382,6 +384,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
     setText(hud.fps, String(fpsShown));
     setText(hud.fpsMode, phase === 'race' && (stage === 1 || inStutter()) ? 'SIMULATED' : 'REAL');
     drawMinimap(now / 1000);
+    if (window.SFX) { SFX.engine(Math.abs(P.v) / V_BOOST, P.boosting, phase !== 'idle' && phase !== 'done'); if (P.boosting && !wasBoost) SFX.boost(); wasBoost = P.boosting; }
   }
 
   /* ---------------- input */
@@ -409,7 +412,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
     cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
   }
   function stop() {
-    running = false; phase = 'idle'; cancelAnimationFrame(raf); raf = 0;
+    running = false; phase = 'idle'; cancelAnimationFrame(raf); raf = 0; window.SFX?.stopLoops();
     Object.keys(keys).forEach(k => keys[k] = false);
     ['tutorial', 'results', 'toast', 'zoneToast'].forEach(k => hud[k]?.classList.remove('show'));
   }
