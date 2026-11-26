@@ -410,7 +410,8 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
   const api = {
     restart, stop, mode: '2d',
     get debug() { return { P, stage, phase, quality: 0, fps: fpsShown, upgrades: P.ups, keys: { ...keys }, mode: '2d' }; },
-    _jump(s) { P.s = s; nextTrafficS = Math.max(nextTrafficS, s + 60); }
+    _jump(s) { P.s = s; nextTrafficS = Math.max(nextTrafficS, s + 60); },
+    _cars() { return traffic.map(c => ({ s: c.s, d: c.d })); }
   };
   window.__game = api;
   return api;
