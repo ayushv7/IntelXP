@@ -46,8 +46,9 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
     if ([0, CONG_START, TRACK_LEN].some(x => Math.abs(x - s) < 25)) continue;
     scenery.push({ s, d: (srand() < .5 ? -1 : 1) * (12 + srand() * 14), kind: srand() < .55 ? 'tree' : 'pine', k: .8 + srand() * .7 });
   }
-  [['AI PC', '#ffd25e'], ['XeSS', '#ffd25e'], ['NPU', '#ffffff'], ['ARC', '#ffd25e'], ['1M MINDS', '#ffffff']]
-    .forEach(([t, c], i) => scenery.push({ s: 260 + i * 820, d: (i % 2 ? 1 : -1) * 15, kind: 'board', text: t, color: c }));
+  const D = window.PROCESSOR_DATA, heroes = D ? D.tierOrder.map(t => { const ms = D.processors[t].laptop?.models || []; return ms.find(m => m.hero) || ms[0]; }).filter(Boolean) : [];
+  (heroes.length ? heroes.map(h => `${h.brand} ${h.name}`) : ['AI PC']).concat(heroes.length ? [`${heroes[0].brand} ${heroes[0].name}`] : [])
+    .forEach((t, i) => scenery.push({ s: 260 + i * 820, d: (i % 2 ? 1 : -1) * 15, kind: 'board', text: t, color: i % 2 ? '#ffffff' : '#ffd25e' }));
   const gates = [[0, 'START', '#1f6bff'], [CONG_START, 'TRAFFIC AHEAD', '#ff8a3d'], [TRACK_LEN, 'FINISH', '#ffc53d']];
 
   /* ---------------- state */
@@ -199,7 +200,12 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
         const m = p.m; g.fillStyle = '#f4f1ea'; g.fillRect(p.x - m * .2, p.y - m * 8, m * .4, m * 8);
         g.fillStyle = hi() ? '#1f6bff' : '#3a5aa8'; rrect(p.x - m * 6, p.y - m * 12.5, m * 12, m * 5, m * .6); g.fill();
         outline(() => rrect(p.x - m * 6, p.y - m * 12.5, m * 12, m * 5, m * .6), '#141a2e', Math.max(1, m * .15));
-        if (m > 1.2) { g.fillStyle = o.color; g.font = `900 ${m * 2.6}px Arial`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(o.text, p.x, p.y - m * 10); }
+        if (m > 1.2) {
+          g.textAlign = 'center'; g.textBaseline = 'middle';
+          let fs = m * 2.2; g.font = `900 ${fs}px Arial`; const tw = g.measureText(o.text).width; if (tw > m * 11) { fs *= m * 11 / tw; g.font = `900 ${fs}px Arial`; }
+          g.fillStyle = o.color; g.fillText(o.text, p.x, p.y - m * 10.6);
+          g.fillStyle = '#dff1ff'; g.font = `700 ${m * .95}px Arial`; g.fillText('Intel® Core™ Ultra AI laptop', p.x, p.y - m * 8.6);
+        }
       } else drawTree(p, o.k, o.kind === 'pine');
     });
     for (const [s, label, col] of gates) add(s, () => {

@@ -185,6 +185,8 @@ const labelFor = id => DATA.useCases.find(u => u.id === id)?.label || id;
 const listText = names => names.length > 1 ? names.slice(0, -1).join(', ') + ' & ' + names[names.length - 1] : (names[0] || '');
 const chipName = p => `${p.family} ${p.model}`.trim();
 const heroOf = L => (L.models || []).find(m => m.hero) || (L.models || [])[0];
+/** "Core Ultra X7 358H (same Arc B390)" -> "Intel® Core™ Ultra X7 358H" */
+const poweredChip = cpu => 'Intel® ' + String(cpu || '').replace(/\s*\(.*\)\s*$/, '').replace(/^Core Ultra/, 'Core™ Ultra');
 /** The shopper's pick that best explains this tier (falls back to their first pick). */
 function topPick(tier, picks) {
   return picks.find(id => (DATA.tierRules[tier] || []).includes(id)) || picks[0];
@@ -200,7 +202,7 @@ const LINE_ICONS = {
 const lineIcon = name => `<svg viewBox="0 0 24 24" aria-hidden="true">${LINE_ICONS[name] || LINE_ICONS.ai}</svg>`;
 
 /** Generic AI laptop illustration (no real brand). Screen glows in the tier accent. */
-function laptopSVG(title, accent, { small = false } = {}) {
+function laptopSVG(title, accent, { small = false, sub = '' } = {}) {
   const id = 'lg' + Math.random().toString(36).slice(2, 7);
   const keys = [];
   for (let r = 0; r < 4; r++) for (let k = 0; k < 12; k++) {
@@ -218,9 +220,9 @@ function laptopSVG(title, accent, { small = false } = {}) {
     <rect x="70" y="20" width="340" height="232" rx="18" fill="url(#${id}l)"/>
     <rect x="84" y="34" width="312" height="204" rx="8" fill="url(#${id}g)"/>
     <circle cx="240" cy="27" r="2.5" fill="#56627e"/>
-    ${small ? '' : `<text x="240" y="128" text-anchor="middle" font-family="Space Grotesk, Inter, Arial, sans-serif" font-weight="700" font-size="30" fill="#ffffff">${esc(title)}</text>
-    <rect x="186" y="150" width="108" height="6" rx="3" fill="#ffffff" opacity=".55"/>
-    <rect x="206" y="164" width="68" height="6" rx="3" fill="#ffffff" opacity=".35"/>`}
+    <text x="240" y="${sub ? 118 : 138}" text-anchor="middle" font-family="Space Grotesk, Inter, Arial, sans-serif" font-weight="700" font-size="${Math.min(40, 560 / Math.max(8, title.length))}" fill="#ffffff">${esc(title)}</text>
+    ${sub ? `<text x="240" y="160" text-anchor="middle" font-family="Space Grotesk, Inter, Arial, sans-serif" font-weight="600" font-size="${Math.min(26, 520 / Math.max(10, sub.length))}" fill="#ffffff" opacity=".9">${esc(sub)}</text>` : ''}
+    <rect x="200" y="${sub ? 178 : 160}" width="80" height="5" rx="2.5" fill="#ffffff" opacity=".45"/>
     <path d="M70 252h340l52 104a10 10 0 0 1-9 14H27a10 10 0 0 1-9-14z" fill="url(#${id}b)"/>
     <path d="M18 356l4 8a10 10 0 0 0 5 6h426a10 10 0 0 0 5-6l4-8z" fill="#6f7c96"/>
     <g fill="#5c6883" opacity=".55">${keys.join('')}</g>
@@ -234,20 +236,19 @@ function renderRecommendation() {
   const p = DATA.processors[state.tier];
   const L = p.laptop;
   const picks = [...state.answers];
-  $('#rec-art').innerHTML = laptopSVG(L.title, p.accent);
-  $('#rec-art').style.setProperty('--accent', p.accent);
-  $('#rec-name').textContent = L.title;
-  $('#rec-sub').textContent = `with ${chipName(p)}`;
   const hero = heroOf(L), others = (L.models || []).filter(m => m !== hero).slice(0, 2);
-  $('#rec-pick').hidden = !hero;
-  $('#rec-art-name').textContent = hero ? `${hero.brand} ${hero.name}` : '';
-  if (hero) {
-    $('#pick-name').textContent = `${hero.brand} ${hero.name}`;
-    $('#pick-meta').textContent = [hero.sku, hero.cpu, hero.memory, hero.price && `from ${hero.price}`].filter(Boolean).join(' · ');
-    const sameChip = others.every(m => m.cpu === hero.cpu);
-    $('#pick-also').innerHTML = others.length ? `<span>${sameChip ? 'Also with this chip:' : 'Also consider:'}</span>` +
-      others.map(m => `<span class="also-chip">${esc(m.brand)} ${esc(m.name)}${m.cpu !== hero.cpu ? ` · ${esc(m.cpu.replace(/^Core Ultra /, ''))}` : ''}</span>`).join('') : '';
-  }
+  const chip = hero ? poweredChip(hero.cpu) : chipName(p);
+  $('#rec-art').innerHTML = hero ? laptopSVG(hero.brand, p.accent, { sub: hero.name }) : laptopSVG(L.title, p.accent);
+  $('#rec-art').style.setProperty('--accent', p.accent);
+  $('#rec-kicker').textContent = `YOUR ${L.title.toUpperCase()}`;
+  $('#rec-name').textContent = hero ? `${hero.brand} ${hero.name}` : L.title;
+  $('#rec-powered').textContent = `Powered by ${chip}`;
+  $('#rec-powered').style.setProperty('--accent', p.accent);
+  $('#pick-meta').textContent = hero ? [hero.sku, hero.memory, hero.price && `from ${hero.price}`].filter(Boolean).join(' · ') : '';
+  const sameChip = hero && others.every(m => m.cpu === hero.cpu);
+  $('#rec-also').hidden = !others.length;
+  $('#rec-also').innerHTML = others.length ? `<p class="also-label">${sameChip ? 'Also with this chip' : 'Also consider'}</p><div class="also-cards">` +
+    others.map(m => `<div class="also-card"><b>${esc(m.brand)}</b><span>${esc(m.name)}</span>${m.cpu !== hero.cpu ? `<em>${esc(poweredChip(m.cpu).replace('Intel® ', ''))}</em>` : ''}<i>${m.price ? 'from ' + esc(m.price) : 'Price in store'}</i></div>`).join('') + '</div>' : '';
   $('#rec-benefits').innerHTML = L.benefits.slice(0, 3).map(b =>
     `<li><span class="b-ico" style="--accent:${esc(p.accent)}">${lineIcon(b.icon)}</span><span>${esc(b.text)}</span></li>`).join('');
   const lead = topPick(state.tier, picks);
@@ -266,7 +267,7 @@ function renderComparison() {
   const picks = [...state.answers];
   const article = /^[aeiou]|^(AMD|HP|LG|MSI)\b/i.test(c.competitorName) ? 'an' : 'a';
   const hero = heroOf(p.laptop);
-  $('#cmp-title').innerHTML = `${hero ? esc(hero.brand + ' ' + hero.name) : 'Intel AI laptop'} <span class="vs">vs</span> ${article} ${esc(c.competitorName)} laptop`;
+  $('#cmp-title').innerHTML = `${hero ? esc(hero.brand + ' ' + hero.name) + ` <span class="chipnote">(${esc(poweredChip(hero.cpu).replace(/®|™/g, ''))})</span>` : 'Intel AI laptop'} <span class="vs">vs</span> ${article} ${esc(c.competitorName)} laptop`;
   $('#cmp-chips').innerHTML = `<span class="intel">${esc(chipName(p))}</span><span class="sep">vs</span><span>${esc(c.competitorName)}</span>`;
 
   const hits = r => (r.matters || []).filter(m => picks.includes(m));
@@ -303,10 +304,10 @@ function renderComparison() {
 
 function renderEnd() {
   const p = DATA.processors[state.tier];
-  const L = p.laptop;
-  $('#end-art').innerHTML = laptopSVG(L.title, p.accent, { small: true });
-  const hero = heroOf(L);
-  $('#end-ask').innerHTML = hero ? `Ask for: <b>${esc(hero.brand)} ${esc(hero.name)}</b> (${esc(hero.sku)})` : `Ask for: <b>${esc(L.title)}</b> with ${esc(chipName(p))}`;
+  const L = p.laptop, hero = heroOf(L);
+  $('#end-art').innerHTML = hero ? laptopSVG(hero.brand, p.accent, { small: true, sub: hero.name }) : laptopSVG(L.title, p.accent, { small: true });
+  $('#end-ask').innerHTML = hero ? `Ask for the <b>${esc(hero.brand)} ${esc(hero.name)}</b>` : `Ask for the <b>${esc(L.title)}</b>`;
+  $('#end-sku').textContent = hero ? `SKU ${hero.sku} · Powered by ${poweredChip(hero.cpu)}` : `Powered by ${chipName(p)}`;
   $('#end-price').hidden = !(hero && hero.price);
   $('#end-price').textContent = hero && hero.price ? `${hero.price} · Price seen online in 2026, check today's price in store.` : '';
 }

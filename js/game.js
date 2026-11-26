@@ -285,9 +285,10 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
       g.fillStyle = gr; g.beginPath(); g.roundRect(0, 0, w, h, 36); g.fill();
       g.fillStyle = 'rgba(255,255,255,.12)'; g.beginPath(); g.ellipse(w * .3, h * .1, w * .5, h * .25, -.1, 0, Math.PI * 2); g.fill();
       g.textAlign = 'center'; g.textBaseline = 'middle';
-      g.font = 'bold 40px Arial, sans-serif'; g.fillStyle = '#dff1ff'; g.fillText(line1, w / 2, h * .34);
-      g.font = '900 76px Arial, sans-serif'; g.lineWidth = 10; g.strokeStyle = '#0a2470'; g.strokeText(line2, w / 2, h * .66);
-      g.fillStyle = accent; g.fillText(line2, w / 2, h * .66);
+      g.font = 'bold 34px Arial, sans-serif'; g.fillStyle = '#dff1ff'; g.fillText(line1, w / 2, h * .74);
+      let fs = 76; do { g.font = `900 ${fs}px Arial, sans-serif`; fs -= 2; } while (g.measureText(line2).width > w * .9 && fs > 30);
+      g.lineWidth = 10; g.strokeStyle = '#0a2470'; g.strokeText(line2, w / 2, h * .42);
+      g.fillStyle = accent; g.fillText(line2, w / 2, h * .42);
     });
   }
 
@@ -485,8 +486,11 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     hillMesh.receiveShadow = true; scene.add(hillMesh);
 
     // a handful of billboards (fewer = cleaner)
-    const boards = [['INTEL CORE ULTRA', 'AI PC', '#ffd25e'], ['CPU · GPU · NPU', 'TEAMWORK', '#ffffff'], ['AI UPSCALING', 'XeSS', '#ffd25e'],
-      ['ON-DEVICE AI', 'NPU', '#ffffff'], ['1 MILLION', 'MINDS', '#ffd25e']];
+    // billboards rotate the 4 hero laptops from processors.js: "[Brand Model] · Intel Core Ultra AI laptop"
+    const D = window.PROCESSOR_DATA, heroes = D ? D.tierOrder.map(t => { const ms = D.processors[t].laptop?.models || []; return ms.find(m => m.hero) || ms[0]; }).filter(Boolean) : [];
+    const boards = heroes.length
+      ? Array.from({ length: 5 }, (_, i) => { const h = heroes[i % heroes.length]; return ['Intel® Core™ Ultra AI laptop', `${h.brand} ${h.name}`, i % 2 ? '#ffffff' : '#ffd25e']; })
+      : [['INTEL CORE ULTRA', 'AI PC', '#ffd25e'], ['ON-DEVICE AI', 'NPU', '#ffffff']];
     const postPair = M(0xf4f1ea, { loColor: 0xb0b0b0, r: .5, m: .3 });
     boards.forEach(([a, b, c], i) => {
       const tex = billboardTex(a, b, c);
