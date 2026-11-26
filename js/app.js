@@ -50,9 +50,11 @@ const actions = {
   enter: () => show('select'),
   home: () => resetAll(),
   'play-gaming': () => startGame(),
-  'play-work': () => show('work'),
-  'play-learning': () => show('learning'),
+  'play-work': () => { show('work'); window.Minis.start('work', $('#screen-work')); },
+  'play-learning': () => { show('learning'); window.Minis.start('learning', $('#screen-learning')); },
+  'exit-mini': () => { window.Minis.stop(); show('select'); },
   'finish-placeholder': () => {
+    window.Minis.stop();
     markComplete(state.screen === 'work' ? 'work' : 'learning');
     show('select');
   },
@@ -117,6 +119,7 @@ function markComplete(id) {
 
 function resetAll() {
   game?.stop();
+  window.Minis?.stop();
   state.unlocked = false;
   state.completed.clear();
   state.answers.clear();
