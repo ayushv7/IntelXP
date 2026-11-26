@@ -109,7 +109,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
   renderer.shadowMap.autoUpdate = false; // updated once per main frame (not per reflection face)
 
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(62, 16 / 9, .1, 2400);
+  const camera = new THREE.PerspectiveCamera(62, 16 / 9, .3, 2400);
   const FOG_BASE = new THREE.Color(0xcfe4f7), FOG_LAG = new THREE.Color(0x9d8fb0);
   scene.fog = new THREE.Fog(FOG_BASE.clone(), 90, 800);
   scene.background = new THREE.Color(0xffe2b8);
@@ -359,8 +359,10 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
 
   /* ---------------------------------------------------------- ground */
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(3200, 3200), null);
-  ground.rotation.x = -Math.PI / 2; ground.position.y = -.06;
+  ground.rotation.x = -Math.PI / 2; ground.position.y = -.25;
+  ground.renderOrder = -1; // always under the road, whatever order shader programs sort in
   dual(ground, M(0xffffff, { loColor: 0x6f9a56, map: grassTex, r: .95, m: 0, env: .25 }));
+  for (const m of [dualList[dualList.length - 1].lo, dualList[dualList.length - 1].hi]) { m.polygonOffset = true; m.polygonOffsetFactor = 2; m.polygonOffsetUnits = 2; }
   ground.receiveShadow = true;
   scene.add(ground);
 
@@ -1645,7 +1647,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
 
     // world anchors
     skyGroup.position.set(camera.position.x, 0, camera.position.z);
-    ground.position.set(Math.round(camera.position.x / 20) * 20, -.06, Math.round(camera.position.z / 20) * 20);
+    ground.position.set(Math.round(camera.position.x / 20) * 20, -.25, Math.round(camera.position.z / 20) * 20);
     const sf = frame(P.s + 10, 0, _m); moon.target.position.set(sf.x, 0, sf.z); moon.position.copy(moon.target.position).add(SUN_OFFSET);
   }
 
@@ -1818,8 +1820,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     restart, stop,
     get debug() { return { P, stage, phase, quality, fps: fpsShown, upgrades: P.ups, keys: { ...keys } }; },
     _jump(s) { P.s = s; nextTrafficS = Math.max(nextTrafficS, s + 60); },
-    _cars() { return traffic.filter(c => c.active).map(c => ({ s: c.s, d: c.d })); },
-    _scene: scene
+    _cars() { return traffic.filter(c => c.active).map(c => ({ s: c.s, d: c.d })); }
   };
   window.__game = api;
   return api;
