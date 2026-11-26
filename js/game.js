@@ -15,13 +15,12 @@
 /* Loaded as a classic script so the page also works when opened from disk (file://).
    Three.js itself is fetched from the CDN as an ES module (resolved via the import map). */
 window.loadGameModule = async function loadGameModule() {
-  const [THREE, { EffectComposer }, { RenderPass }, { UnrealBloomPass }, { OutputPass }, { RoomEnvironment }, { RoundedBoxGeometry }, { mergeGeometries }] = await Promise.all([
+  const [THREE, { EffectComposer }, { RenderPass }, { UnrealBloomPass }, { OutputPass }, { RoundedBoxGeometry }, { mergeGeometries }] = await Promise.all([
     import('three'),
     import('three/addons/postprocessing/EffectComposer.js'),
     import('three/addons/postprocessing/RenderPass.js'),
     import('three/addons/postprocessing/UnrealBloomPass.js'),
     import('three/addons/postprocessing/OutputPass.js'),
-    import('three/addons/environments/RoomEnvironment.js'),
     import('three/addons/geometries/RoundedBoxGeometry.js'),
     import('three/addons/utils/BufferGeometryUtils.js')
   ]);

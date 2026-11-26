@@ -4,11 +4,11 @@ An interactive retail kiosk experience that turns "Why an AI PC?" into "I want t
 a 60–90 second 3D racing game, a short quiz, a personalized Intel Core Ultra recommendation,
 a side-by-side comparison, and a "show this to an associate" end screen.
 
-Static HTML/CSS/vanilla JS + Three.js (r160 via CDN). No build step.
+Static HTML/CSS/vanilla JS + Three.js r160. No build step, and no third-party requests: Three.js and the fonts are self-hosted.
 
 ## Run locally
 
-You can double-click `index.html` to open it directly, or serve the folder:
+Serve the folder over http (the 3D race loads Three.js as an ES module, which browsers block on `file://`; opened from disk, the menus and 2D missions still work and the race shows a fallback):
 
 ```bash
 python3 -m http.server 8080
@@ -34,7 +34,7 @@ All paths are relative, so the site works from a sub-path. `.nojekyll` is includ
 - Use the fullscreen button in the top-right corner, or launch Chrome in kiosk mode:
   `google-chrome --kiosk --autoplay-policy=no-user-gesture-required https://<you>.github.io/<repo>/`
 - After 60 s with no input the experience resets to the landing screen. A "Still there?" warning appears at 50 s.
-- The kiosk needs internet access for the Three.js CDN and Google Fonts. If the 3D engine can't load, the game shows a friendly fallback and the journey continues.
+- Works fully offline once served: no CDN or Google Fonts calls. If WebGL is unavailable, the race shows a fallback and the journey continues.
 
 ## Editing product data: `js/processors.js`
 
@@ -93,4 +93,7 @@ js/processors.js    editable product data (only file most people need to touch)
 js/app.js           navigation, quiz, recommendation, comparison, idle reset, fullscreen
 js/game.js          Three.js racing game + HUD
 assets/*.svg        generic processor chip illustrations (no third-party logos)
+js/minis.js         Work / Learning 2D minigames
+js/vendor/three/    Three.js r160 (MIT): only the files the game imports
+fonts/, css/fonts.css  Inter, Space Grotesk, Press Start 2P (OFL 1.1), latin woff2
 ```
