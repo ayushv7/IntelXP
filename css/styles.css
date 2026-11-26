@@ -442,3 +442,35 @@ kbd { display: inline-block; padding: 3px 6px; margin: 0 1px; border: 1px solid 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
 }
+
+/* ---------- Minimal race HUD + pickup feedback ---------- */
+.hud-tl .hud-system-name { font-size: clamp(14px, 1.3vw, 20px); margin-bottom: 10px; }
+.hud-tl .slot { font-size: clamp(11px, .9vw, 14px); padding: 8px 11px; }
+.slot.pop { animation: slot-pop .5s var(--ease); }
+@keyframes slot-pop { 40% { transform: scale(1.45); box-shadow: 0 0 22px rgba(255, 200, 69, .9); } }
+.hud-progress { width: min(420px, 34vw); padding-top: 12px; }
+.bar.progress { height: 5px; }
+.bar .cp { width: 11px; height: 11px; top: -3px; }
+.hud-fps { display: grid; justify-items: end; gap: 6px; }
+.hud-fps b { font-size: clamp(30px, 3.2vw, 52px); font-weight: 400; color: var(--ok); line-height: 1; }
+.hud-fps span { font-size: clamp(10px, .8vw, 13px); }
+.hud-fps em { font-style: normal; font-size: clamp(9px, .7vw, 12px); color: var(--gold); letter-spacing: .1em; }
+.hud-speed { display: flex; align-items: baseline; gap: 10px; }
+.hud-speed b { font-size: clamp(32px, 3.6vw, 60px); font-weight: 400; line-height: 1; }
+.hud-speed span { font-size: clamp(10px, .8vw, 13px); }
+.upgrade-toast { top: 50%; transform: translate(-50%, -50%) scale(.92); }
+.upgrade-toast.show { transform: translate(-50%, -50%) scale(1); }
+.wipe { position: absolute; inset: 0; width: 100%; height: 100%; image-rendering: pixelated; pointer-events: none; z-index: 4; display: none; clip-path: inset(0 0 0 0); }
+.wipe.run { display: block; animation: wipe 1s var(--ease) forwards; }
+@keyframes wipe { to { clip-path: inset(0 0 0 100%); } }
+.flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; z-index: 6; }
+.flash.go { animation: flash .4s ease-out; }
+@keyframes flash { from { opacity: .7; } to { opacity: 0; } }
+.ba { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; width: 100%; }
+.ba figure { margin: 0; display: grid; gap: 8px; }
+.ba canvas { width: 100%; aspect-ratio: 16 / 9; border-radius: 10px; background: #0a1530; image-rendering: auto; }
+.ba figure:first-child canvas { image-rendering: pixelated; }
+.ba figcaption { font-size: 9px; color: var(--muted); }
+.ticks { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 10px 22px; font-family: var(--font-ui); font-size: 15px; color: var(--cyan-soft); }
+.ticks li::before { content: '✓ '; color: var(--ok); font-weight: 700; }
+.results-card { width: min(760px, 100%); }

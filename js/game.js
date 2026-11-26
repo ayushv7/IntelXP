@@ -35,15 +35,15 @@ const LANES = [-6, -2, 2, 6];
 const PLAYER_LIMIT = 7.0;
 const V_MAX = 72, V_BOOST = 96, V_CRUISE = 30, V_MIN_BRAKE = 12;
 const ACCEL = 15, BRAKE_DECEL = 34, BOOST_ACCEL = 26;
-const TUTORIAL_MS = 5000;
+const TUTORIAL_MS = 4000;
 
 const UPGRADES = [
   { name: 'INCREASED FRAME RATE', system: 'BASIC PC + FPS',
-    desc: 'Intel® Arc™ graphics on Intel Core Ultra processors render more frames per second for smoother gameplay.' },
+    desc: 'Intel Arc graphics render more frames, more smoothly.' },
   { name: 'AI UPSCALING', system: 'AI PC · XeSS',
-    desc: 'Intel XeSS uses AI on the Arc GPU to upscale frames into sharp, high-resolution images — with richer lighting, shadows & reflections.' },
+    desc: 'XeSS uses AI on the GPU to sharpen every frame.' },
   { name: 'REDUCED LAG', system: 'INTEL AI PC',
-    desc: 'Hybrid P-cores & E-cores with Intel Thread Director keep background tasks off your game\'s cores, while the NPU runs AI extras (like stream effects) at low power.' }
+    desc: 'Hybrid cores keep background tasks off your game.' }
 ];
 
 /* Auto-quality ladder (only real rendering cost; never touches simulated effects) */
@@ -720,17 +720,17 @@ function createGame({ root, canvas, onActivity = () => {} }) {
     accel: $('bar-accel'), brake: $('bar-brake'), fuel: $('bar-fuel'), boost: $('bar-boost'),
     tutorial: $('game-tutorial'), tutBar: $('tutorial-bar'), tutCount: $('tutorial-count'),
     toast: $('upgrade-toast'), toastName: $('ut-name'), toastDesc: $('ut-desc'), zoneToast: $('zone-toast'), go: $('go-text'),
-    results: $('game-results'), error: $('game-error')
+    results: $('game-results'), error: $('game-error'), fpsMode: $('hud-fpsmode'), wipe: $('wipe'), flash: $('flash')
   };
   const slots = [...root.querySelectorAll('.upgrade-slots .slot')];
   const cps = [...root.querySelectorAll('.bar.progress .cp')];
   const hudRoot = $('hud');
   COIN_S.forEach((s, i) => hudRoot.style.setProperty(`--cp${i + 1}`, (s / TRACK_LEN * 100) + '%'));
   const _last = new Map();
-  const setText = (el, v) => { if (_last.get(el) !== v) { _last.set(el, v); el.textContent = v; } };
-  const setW = (el, f) => { const v = (clamp(f, 0, 1) * 100).toFixed(1) + '%'; if (_last.get(el) !== v) { _last.set(el, v); el.style.width = v; } };
+  const setText = (el, v) => { if (el && _last.get(el) !== v) { _last.set(el, v); el.textContent = v; } };
+  const setW = (el, f) => { const v = (clamp(f, 0, 1) * 100).toFixed(1) + '%'; if (el && _last.get(el) !== v) { _last.set(el, v); el.style.width = v; } };
 
-  const speedo = $('speedo'), sg = speedo.getContext('2d');
+  const speedo = $('speedo'), sg = speedo && speedo.getContext('2d');
   function drawSpeedo(kmh, boosting) {
     const W = speedo.width, cx = W / 2, cy = W / 2, r = W * .42;
     const a0 = Math.PI * .75, a1 = Math.PI * 2.25, MAXK = 360;
@@ -750,7 +750,7 @@ function createGame({ root, canvas, onActivity = () => {} }) {
     }
   }
 
-  const mini = $('minimap'), mg = mini.getContext('2d');
+  const mini = $('minimap'), mg = mini && mini.getContext('2d');
   const _m = {};
   function drawMinimap(t) {
     const W = mini.width, H = mini.height;
@@ -923,13 +923,15 @@ function createGame({ root, canvas, onActivity = () => {} }) {
     hud.toastDesc.textContent = u.desc;
     hud.toast.classList.add('show');
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => hud.toast.classList.remove('show'), 3800);
+    toastTimer = setTimeout(() => hud.toast.classList.remove('show'), 2500);
   }
   function collectUpgrade(u) {
     u.taken = true; u.g.visible = false;
     const i = P.ups; P.ups++; P.coins++; P.score += 1000;
     P.boost = Math.min(100, P.boost + 40); P.fuel = Math.min(100, P.fuel + 15);
-    slots[i]?.classList.add('on'); cps[i]?.classList.add('got');
+    slots[i]?.classList.add('on'); retrigger(slots[i], 'pop'); cps[i]?.classList.add('got');
+    slowUntil = performance.now() + 400; retrigger(hud.flash, 'go');
+    if (i === 1) wipeToSharp();
     setText(hud.system, UPGRADES[i].system);
     if (i === 2) hud.system.classList.add('ai');
     showToast(i);
@@ -1188,25 +1190,30 @@ function createGame({ root, canvas, onActivity = () => {} }) {
   }
 
   /* --------------------------------------------------------- HUD */
-  function updateHUD(t) {
-    const kmh = Math.round(P.v * 3.6);
-    setText(hud.speed, String(kmh));
-    drawSpeedo(P.v * 3.6, P.boosting);
-    setW(hud.accel, P.accel); setW(hud.brake, P.brake); setW(hud.fuel, P.fuel / 100); setW(hud.boost, P.boost / 100);
-    setText(hud.dist, `${Math.min(TRACK_LEN, Math.round(P.s))} / ${TRACK_LEN} m`);
+  function updateHUD() {
+    setText(hud.speed, String(Math.round(P.v * 3.6)));
     setW(hud.prog, P.s / TRACK_LEN);
-    setText(hud.time, `${(P.time + P.penalty).toFixed(1)}s${P.penalty ? `  (+${P.penalty}s)` : ''}`);
-    setText(hud.zone, inStutterZone() ? 'CONGESTED' : stage >= 4 ? 'AI PC MODE' : '');
-    setText(hud.score, String(Math.round(P.score)));
-    setText(hud.coins, String(P.coins));
     setText(hud.fps, String(fpsShown));
-    let tag = '';
-    if (phase === 'tutorial') tag = '';
-    else if (stage === 1) tag = 'SIMULATED 15–20 FPS CAP';
-    else if (inStutterZone()) tag = 'SIMULATED LAG / STUTTER';
-    else if (stage >= 3 && quality > 0) tag = `AUTO QUALITY: ${QUALITY[quality].name}`;
-    setText(hud.simtag, tag);
-    drawMinimap(t);
+    // the number is always REAL measured FPS; the label says when a simulated limit is in effect
+    setText(hud.fpsMode, phase === 'race' && (stage === 1 || inStutterZone()) ? 'SIMULATED' : 'REAL');
+  }
+
+  /* ---- coin pickup feedback, before/after snapshots */
+  let slowUntil = 0, wantAfterShot = false, shotBefore = false;
+  function snap(id) {
+    const c = root.querySelector('#' + id); if (!c) return;
+    const g = c.getContext('2d');
+    g.imageSmoothingEnabled = stage >= 3;
+    g.drawImage(canvas, 0, 0, c.width, c.height);
+  }
+  function retrigger(el, cls) { if (!el) return; el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+  function wipeToSharp() {
+    // freeze the current low-res frame on an overlay, then wipe it away left-to-right over the sharp frame
+    const w = hud.wipe; if (!w) return;
+    renderer.render(scene, camera);
+    w.width = canvas.width; w.height = canvas.height;
+    w.getContext('2d').drawImage(canvas, 0, 0);
+    retrigger(w, 'run');
   }
 
   /* ------------------------------------------------------- main loop */
@@ -1246,7 +1253,7 @@ function createGame({ root, canvas, onActivity = () => {} }) {
     if (phase === 'race' && (keys.gas || keys.brake || keys.left || keys.right || keys.boost) && now - lastActivityPing > 1000) {
       lastActivityPing = now; onActivity();
     }
-    let rem = dt;
+    let rem = now < slowUntil ? dt * .25 : dt; // 0.4 s slow-mo on upgrade pickup
     while (rem > 1e-6) { const h = Math.min(rem, 1 / 120); step(h); rem -= h; }
     const t = now / 1000;
     sync(dt, t);
@@ -1261,7 +1268,9 @@ function createGame({ root, canvas, onActivity = () => {} }) {
       }
     } else { natT0 = now; natTime = 0; natFrames = 0; }
     if (stage >= 4) composer.render(dt); else renderer.render(scene, camera);
-    updateHUD(t);
+    updateHUD();
+    if (!shotBefore && stage === 1 && phase === 'race' && P.time > 1.2) { shotBefore = true; snap('res-before'); }
+    if (wantAfterShot) { wantAfterShot = false; snap('res-after'); hud.results.classList.add('show'); }
 
     // ---- REAL fps measurement (rendered frames / second)
     fpsFrames++;
@@ -1273,11 +1282,7 @@ function createGame({ root, canvas, onActivity = () => {} }) {
   function showResults() {
     if (phase === 'done') return;
     phase = 'done';
-    root.querySelector('#res-time').textContent = `${(P.time + P.penalty).toFixed(1)}s`;
-    root.querySelector('#res-score').textContent = Math.round(P.score);
-    root.querySelector('#res-coins').textContent = P.coins;
-    root.querySelector('#res-hits').textContent = P.hits;
-    hud.results.classList.add('show');
+    wantAfterShot = true; // captured right after the next render, then the card opens
   }
 
   /* ------------------------------------------------------ public API */
@@ -1298,6 +1303,7 @@ function createGame({ root, canvas, onActivity = () => {} }) {
     Object.keys(keys).forEach(k => keys[k] = false);
     root.querySelectorAll('.tc-btn.held').forEach(b => b.classList.remove('held'));
     resetState();
+    shotBefore = false; wantAfterShot = false; slowUntil = 0; hud.wipe?.classList.remove('run');
     phase = 'tutorial'; tutorialStart = performance.now(); orbit = 0;
     hud.tutorial.classList.add('show');
     hud.tutBar.style.width = '0%';
