@@ -15,8 +15,11 @@ const state = {
   unlocked: false,
   completed: new Set(),
   answers: new Set(),
-  tier: DATA.tierOrder[0]
+  tier: DATA.tierOrder[0],
+  budget: null,   // max ₹ (Infinity for the top tier)
+  result: null    // recommendWithBudget(...)
 };
+const BUDGET = window.BUDGET_DATA;
 
 /* ---------------------------------------------------------------- utils */
 let toastTimer;
@@ -77,12 +80,22 @@ const actions = {
       $('#quiz-msg').textContent = 'Pick at least one option to continue.';
       return;
     }
-    state.tier = computeTier([...state.answers]);
+    show('budget');
+  },
+  'finish-budget': (btn) => {
+    const custom = +$('#budget-input').value.replace(/\D/g, '');
+    const budget = custom > 0 ? custom : state.budget;
+    if (!(budget > 0)) { shake(btn); $('#budget-msg').textContent = 'Pick a budget or enter an amount.'; return; }
+    state.budget = budget;
+    state.result = recommendWithBudget([...state.answers], budget);
+    const c = state.result.chip;
+    state.tier = c.idealFor || computeTier([...state.answers]); // accent + (when the chip matches) specs/compare
     state.model = null;
     renderRecommendation();
     show('rec');
   },
   'back-quiz': () => { closeSheet(); show('quiz'); },
+  'back-budget': () => { closeSheet(); show('budget'); },
   compare: () => { closeSheet(); renderComparison(); show('compare'); },
   laptops: () => { closeSheet(); renderLaptops(); show('laptops'); },
   'back-laptops': () => show('laptops'),
@@ -129,6 +142,9 @@ function resetAll() {
   state.completed.clear();
   state.answers.clear();
   state.tier = DATA.tierOrder[0];
+  state.budget = null; state.result = null;
+  $$('.budget-opt').forEach(o => o.setAttribute('aria-pressed', 'false'));
+  $('#budget-input').value = ''; $('#budget-msg').textContent = '';
   closeSheet();
   $$('.mission').forEach(m => m.classList.remove('done'));
   $('#btn-next').classList.add('locked');
@@ -171,6 +187,25 @@ function buildQuiz() {
   });
 }
 
+function buildBudget() {
+  const grid = $('#budget-grid');
+  grid.innerHTML = BUDGET.budgetTiers.map(b => `
+    <button class="hex-card quiz-opt budget-opt" data-max="${b.max}" aria-pressed="false">
+      <span class="qt"><b>${esc(b.label)}</b></span><span class="check" aria-hidden="true"></span>
+    </button>`).join('');
+  grid.addEventListener('click', e => {
+    const opt = e.target.closest('.budget-opt'); if (!opt) return;
+    $$('.budget-opt').forEach(o => o.setAttribute('aria-pressed', String(o === opt)));
+    state.budget = Number(opt.dataset.max); // "Infinity" -> Infinity
+    $('#budget-input').value = ''; $('#budget-msg').textContent = '';
+    window.SFX?.tick();
+  });
+  $('#budget-input').addEventListener('input', e => {
+    e.target.value = e.target.value.replace(/\D/g, '');
+    if (e.target.value) $$('.budget-opt').forEach(o => o.setAttribute('aria-pressed', 'false'));
+  });
+}
+
 /* ----------------------------------------------- recommendation logic */
 // Highest tier among the picks wins; a busy "everyday" shopper (3+ picks) moves up.
 function computeTier(answers) {
@@ -185,6 +220,40 @@ function computeTier(answers) {
   const bump = DATA.multitaskBump;
   if (bump && tier === bump.from && answers.length >= bump.minPicks) tier = bump.to;
   return tier;
+}
+
+/* ---- budget-aware pick (pure: data in, result out) */
+const PICK_TAGS = { studying: ['student', 'portable'], work: ['business', 'portable'], creation: ['creator', 'oled'], gaming: ['gaming'], entertainment: ['oled', 'big-screen'], browsing: ['portable'] };
+const inr = n => '₹' + Math.round(n).toLocaleString('en-IN');
+function recommendWithBudget(picks, budget, data = window.BUDGET_DATA) {
+  const chips = Object.entries(data.chips).map(([key, c]) => ({ key, ...c }));
+  const idealTier = computeTier(picks);
+  const ideal = chips.find(c => c.idealFor === idealTier);
+  const byTierDesc = chips.slice().sort((a, b) => b.performanceTier - a.performanceTier);
+  const cheapest = chips.reduce((a, b) => (b.minLaptopPrice < a.minLaptopPrice ? b : a));
+  // best chip that fits, never "better" than the ideal match
+  const fitting = byTierDesc.filter(c => c.minLaptopPrice <= budget && c.performanceTier <= ideal.performanceTier);
+  const withinBudget = budget >= ideal.minLaptopPrice;
+  const chip = withinBudget ? ideal : (fitting[0] || cheapest);
+  const tradeOffNote = withinBudget ? '' : fitting.length
+    ? `Your ideal match is the ${ideal.name}. It starts at about ${inr(ideal.minLaptopPrice)}. This is the best Intel AI laptop chip in your budget.${chip.note ? ' ' + chip.note + '.' : ''}`
+    : `Intel AI laptops start at about ${inr(cheapest.minLaptopPrice)}.`;
+  const wanted = new Set(picks.flatMap(p => PICK_TAGS[p] || []));
+  const score = l => l.tags.filter(t => wanted.has(t)).length;
+  const rank = list => list.slice().sort((a, b) => score(b) - score(a) || a.price - b.price);
+  const ofChip = k => data.laptops.filter(l => l.chip === k);
+  let list = rank(ofChip(chip.key).filter(l => l.price <= budget));
+  for (const lower of byTierDesc.filter(c => c.performanceTier < chip.performanceTier && c.minLaptopPrice <= budget)) {
+    if (list.length >= 2) break;
+    list = list.concat(rank(ofChip(lower.key).filter(l => l.price <= budget)));
+  }
+  if (!list.length) list = ofChip(chip.key).sort((a, b) => a.price - b.price); // nothing fits: show the cheapest chip's laptops
+  const cpuOf = k => data.chips[k].name.replace(/^Intel®\s*/, '').replace(/™/g, '');
+  const laptops = list.slice(0, 3).map((l, i) => ({
+    brand: l.brand, name: l.name, sku: l.sku, cpu: cpuOf(l.chip), chip: l.chip,
+    memory: `${l.ram} / ${l.storage}`, price: inr(l.price), priceValue: l.price, whyItFits: l.whyItFits, where: l.where, hero: i === 0
+  }));
+  return { chip, idealChip: ideal, withinBudget, tradeOffNote, laptops };
 }
 
 const labelFor = id => DATA.useCases.find(u => u.id === id)?.label || id;
@@ -252,18 +321,25 @@ const AI_FEATS = [
 ];
 function specValue(p, re) { return (p.specs.find(x => re.test(x.label)) || {}).value || ''; }
 function renderRecommendation() {
-  const p = DATA.processors[state.tier];
-  $('#rec-chip-img').src = p.image;
-  $('#rec-chip-img').alt = `${chipName(p)} illustration`;
+  const p = DATA.processors[state.tier], r = state.result, c = r?.chip;
+  const exact = !c || String(p.model) === c.key; // processors.js has full specs for this exact chip
+  const ultra = (String(c?.name).match(/Ultra X?(\d)/) || [])[1];
+  $('#rec-chip-img').src = exact ? p.image : `assets/chip-ultra${ultra === '9' ? 9 : ultra === '5' ? 5 : 7}.svg`;
+  $('#rec-name').textContent = exact ? chipName(p) : c.name;
+  $('#rec-chip-img').alt = `${$('#rec-name').textContent} illustration`;
   $('.chip-halo').style.setProperty('--chip-accent', p.accent);
-  $('#rec-name').textContent = chipName(p);
-  $('#rec-tagline').textContent = p.tagline;
+  $('#rec-tagline').textContent = exact || c.idealFor ? p.tagline : (r.withinBudget ? c.note || '' : ''); // the trade-off line already carries the note
+  $('#rec-tradeoff').hidden = !(r && !r.withinBudget);
+  $('#rec-tradeoff').textContent = r && !r.withinBudget ? r.tradeOffNote : '';
+  // specs, battery claim, Copilot+ features and the comparison only where they are true for this chip
+  $('#rec-tiles').hidden = $('#rec-batt-note').hidden = !exact;
+  $('.specs-link').hidden = $('[data-action="compare"]').hidden = !exact;
   const tiles = [['CPU cores', specValue(p, /cores/i)], ['Max turbo', specValue(p, /turbo/i)], ['AI engine (NPU)', specValue(p, /NPU/i)], ['Battery', '27 hrs*', 'up to ']].filter(([, v]) => v);
   $('#rec-tiles').innerHTML = tiles.map(([l, v, pre]) => `<div class="stat-tile" style="--accent:${esc(p.accent)}"><b>${pre ? `<small>${esc(pre)}</small>` : ''}${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
   // "What AI does for you": max 3, from the shopper's picks (order of the list below)
   const feats = AI_FEATS.filter(f => f.ids.some(id => state.answers.has(id))).slice(0, 3);
   $('#rec-ai').innerHTML = feats.map(f => `<li style="--accent:${esc(p.accent)}">${lineIcon(f.icon)}<span>${esc(f.text)}</span></li>`).join('');
-  $('.ai-for-you').hidden = !feats.length;
+  $('.ai-for-you').hidden = !feats.length || (c && !c.copilotPlus);
   // tech-specs sheet content
   $('#sheet-title').textContent = `${chipName(p)} · tech specs`;
   $('#sheet-specs').innerHTML = p.specs.map(s => `<div><span>${esc(s.label)}</span><b>${esc(s.value)}</b></div>`).join('');
@@ -273,12 +349,13 @@ function renderRecommendation() {
 }
 
 /* ---- laptops screen: hero + up to 2 alternatives; tap to select */
+const laptopsFor = p => state.result?.laptops || modelsOf(p);
 const modelsOf = p => { const ms = (p.laptop.models || []).slice(); const h = heroOf(p.laptop); return h ? [h, ...ms.filter(m => m !== h)].slice(0, 3) : ms.slice(0, 3); };
 const cpuShort = cpu => String(cpu || '').replace(/\s*\(.*\)\s*$/, '');
 function renderLaptops() {
-  const p = DATA.processors[state.tier], ms = modelsOf(p);
+  const p = DATA.processors[state.tier], ms = laptopsFor(p);
   if (!ms.includes(state.model)) state.model = ms[0] || null;
-  const chipModel = String(p.model || '');
+  const chipModel = String(state.result?.chip.key || p.model || '');
   const allThisChip = ms.length && ms.every(m => cpuShort(m.cpu).endsWith(' ' + chipModel));
   // accuracy: only say "this processor" when every listed laptop really has it
   $('#lap-title').textContent = allThisChip ? 'Laptops with this processor' : 'Recommended laptops';
@@ -286,13 +363,14 @@ function renderLaptops() {
   const order = state.model ? [state.model, ...ms.filter(m => m !== state.model)] : ms;
   const card = (m, pos) => {
     const hero = pos === 0, top = m === ms[0] && m.hero !== false;
-    const meta = [m.memory, m.price && `from ${m.price}`].filter(Boolean).join(' · ');
+    const meta = [m.memory, m.price && `${m.price}*`].filter(Boolean).join(' · ');
     return `<button class="lap-card ${hero ? 'hero' : ''}" data-k="${ms.indexOf(m)}" aria-pressed="${m === state.model}" style="--accent:${esc(p.accent)}">
       ${top ? '<span class="ribbon">MOST RECOMMENDED</span>' : ''}
       ${hero ? `<div class="lap-card-art">${laptopSVG(m.brand, p.accent, { sub: m.name })}</div>` : ''}
       <b class="lc-name">${esc(m.brand)} ${esc(m.name)}</b>
       <span class="lc-chip">${esc(poweredChip(m.cpu))}</span>
       ${meta ? `<span class="lc-meta">${esc(meta)}</span>` : ''}
+      ${m.whyItFits ? `<span class="lc-why">${esc(m.whyItFits)}</span>` : ''}
       ${hero ? '<span class="batt-badge">All-day battery</span>' : ''}
     </button>`;
   };
@@ -375,7 +453,7 @@ function renderComparison() {
 
 function renderEnd() {
   const p = DATA.processors[state.tier];
-  const m = state.model || modelsOf(p)[0];
+  const m = state.model || laptopsFor(p)[0];
   $('#end-art').innerHTML = m ? laptopSVG(m.brand, p.accent, { small: true, sub: m.name }) : laptopSVG(p.laptop.title, p.accent, { small: true });
   $('#end-ask').innerHTML = m ? `Ask for the <b>${esc(m.brand)} ${esc(m.name)}</b>` : `Ask for the <b>${esc(p.laptop.title)}</b>`;
   $('#end-sku').textContent = m ? `SKU ${m.sku} · ${poweredChip(m.cpu)}` : chipName(p);
@@ -394,7 +472,8 @@ function renderEnd() {
 /* ---- phone card from the QR: ?result=<tier>&model=<sku> */
 function renderShare(tier, sku) {
   const p = DATA.processors[tier]; if (!p) return false;
-  const all = DATA.tierOrder.flatMap(t => DATA.processors[t].laptop.models || []);
+  const all = DATA.tierOrder.flatMap(t => DATA.processors[t].laptop.models || [])
+    .concat(BUDGET.laptops.map(l => ({ brand: l.brand, name: l.name, sku: l.sku, cpu: BUDGET.chips[l.chip].name.replace(/^Intel®\s*/, '').replace(/™/g, ''), price: inr(l.price) })));
   const m = all.find(x => x.sku === sku) || heroOf(p.laptop);
   $('#share-art').innerHTML = m ? laptopSVG(m.brand, p.accent, { small: true, sub: m.name }) : laptopSVG(p.laptop.title, p.accent, { small: true });
   $('#share-model').textContent = m ? `${m.brand} ${m.name}` : p.laptop.title;
@@ -656,6 +735,7 @@ function stopStars() {
 /* ---------------------------------------------------------------- boot */
 if (navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches) document.body.classList.add('touch');
 buildQuiz();
+buildBudget();
 const SHARE = new URLSearchParams(location.search);
 if (SHARE.get('result') && renderShare(SHARE.get('result'), SHARE.get('model'))) {
   document.body.classList.add('share-view');
@@ -669,4 +749,4 @@ setTimeout(() => {
 }, 1200);
 
 // Expose for automated testing / debugging
-window.__app = { state, show, computeTier, get game() { return game; }, get idleMs() { return performance.now() - lastActivity; } };
+window.__app = { state, show, computeTier, recommendWithBudget, get game() { return game; }, get idleMs() { return performance.now() - lastActivity; } };

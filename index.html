@@ -200,19 +200,33 @@
         <p class="m-sub">Pick all that apply</p>
         <div class="quiz-grid" id="quiz-grid"></div>
         <p class="quiz-msg" id="quiz-msg" aria-live="polite"></p>
-        <button class="hex-btn hex-lg" id="btn-finish" data-action="finish-quiz">FINISH ▶</button>
+        <button class="hex-btn hex-lg" id="btn-finish" data-action="finish-quiz">NEXT ▶</button>
+      </div>
+    </section>
+
+    <!-- 5b. BUDGET ========================================================= -->
+    <section class="screen modern" id="screen-budget" data-screen="budget">
+      <button class="corner-btn" data-action="back-quiz" aria-label="Back" title="Back">◀</button>
+      <div class="modern-inner">
+        <h1 class="m-h1">What's your budget?</h1>
+        <p class="m-sub">Pick one, or type an amount</p>
+        <div class="quiz-grid budget-grid" id="budget-grid"></div>
+        <label class="budget-custom">Or enter an amount <span>₹</span><input id="budget-input" type="text" inputmode="numeric" pattern="[0-9]*" maxlength="8" placeholder="e.g. 90000" autocomplete="off" /></label>
+        <p class="quiz-msg" id="budget-msg" aria-live="polite"></p>
+        <button class="hex-btn hex-lg" data-action="finish-budget">FINISH ▶</button>
       </div>
     </section>
 
     <!-- 6. CHIP: "Your AI processor" ================================= -->
     <section class="screen modern" id="screen-rec" data-screen="rec">
-      <button class="corner-btn" data-action="back-quiz" aria-label="Edit answers" title="Edit answers">◀</button>
+      <button class="corner-btn" data-action="back-budget" aria-label="Edit answers" title="Edit answers">◀</button>
       <div class="modern-inner chip-inner">
         <div class="chip-halo big"><img id="rec-chip-img" src="assets/chip-ultra7.svg" alt="" width="260" height="260" /></div>
         <div class="chip-info">
           <p class="kicker">YOUR AI PROCESSOR</p>
           <h1 class="m-h1 chip-name" id="rec-name">Intel® Core™ Ultra</h1>
           <p class="rec-tagline" id="rec-tagline"></p>
+          <p class="rec-tradeoff" id="rec-tradeoff" hidden></p>
           <div class="stat-tiles" id="rec-tiles"></div>
           <p class="fine" id="rec-batt-note">*Intel claim for Core Ultra Series 3; varies by laptop and use.</p>
           <div class="ai-for-you"><p class="kicker">WHAT AI DOES FOR YOU</p><ul class="ai-feats" id="rec-ai"></ul><p class="fine">Copilot+ PC features. Availability varies by region and Windows update.</p></div>
@@ -231,6 +245,7 @@
       <div class="modern-inner lap-inner">
         <h2 class="m-h2" id="lap-title">Laptops with this processor</h2>
         <div class="lap-cards" id="lap-cards"></div>
+        <p class="fine lap-fine">*Approx. price seen online, check in store</p>
         <button class="hex-btn hex-lg" data-action="end">GET THIS LAPTOP ▶</button>
       </div>
     </section>
@@ -318,6 +333,7 @@
   <div class="toast" id="toast" aria-live="polite"></div>
 
   <script src="js/processors.js"></script>
+  <script src="js/laptops.js"></script>
   <script src="js/boosthint.js"></script>
   <script src="js/game.js"></script>
   <script src="js/sfx.js"></script>

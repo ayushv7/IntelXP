@@ -158,9 +158,9 @@
 .f-work.bump { background: #d6f7e6; } .f-trash.bump { background: #ffe0e3; }
 .mail-pane { position: relative; display: grid; grid-template-rows: 1fr auto auto; gap: 1cqw; padding: 1.4cqw 1.6cqw 1cqw; min-height: 0; }
 .mail-stack { position: relative; min-height: 0; }
-.slot { position: absolute; inset: 0 0 2.2cqw; transition: transform .3s var(--ease); }
-.slot.s1 { transform: translateY(1.1cqw) scale(.96); filter: brightness(.94); }
-.slot.s2 { transform: translateY(2.2cqw) scale(.92); filter: brightness(.88); }
+.mail-stack .slot { position: absolute; inset: 0 0 2.2cqw; transition: transform .3s var(--ease); }
+.mail-stack .slot.s1 { transform: translateY(1.1cqw) scale(.96); filter: brightness(.94); }
+.mail-stack .slot.s2 { transform: translateY(2.2cqw) scale(.92); filter: brightness(.88); }
 .mail-card { height: 100%; overflow: hidden; display: flex; flex-direction: column; gap: .8cqw; padding: 1.6cqw 2cqw; border-radius: 10px; box-shadow: 0 4px 14px rgba(20, 30, 60, .25); }
 .mail-card header { display: flex; align-items: center; gap: 1.2cqw; }
 .mail-card header div { display: flex; flex-direction: column; min-width: 0; }

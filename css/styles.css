@@ -904,3 +904,17 @@ body.share-view .kiosk-bar { display: none; }
 .brand-foot { bottom: max(24px, env(safe-area-inset-bottom)); }
 
 .lap-card:not(.hero) .ribbon { top: -11px; left: auto; right: 18px; transform: none; padding: 3px 10px; font-size: 11px; }
+
+/* ---- budget step */
+.budget-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.budget-opt { justify-content: center; text-align: center; }
+.budget-opt .check { margin-left: 12px; }
+.budget-custom { display: flex; align-items: center; gap: 10px; font-family: var(--font-ui); color: var(--muted); }
+.budget-custom span { color: #fff; font-weight: 700; }
+.budget-custom input { width: 160px; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--line); background: rgba(255,255,255,.06); color: #fff; font: 600 18px var(--font-ui); }
+.budget-custom input:focus { outline: 2px solid var(--cyan); }
+.rec-tradeoff { margin: 0; max-width: 46em; font-size: var(--fs-small); line-height: 1.5; color: var(--cyan-soft); }
+.lc-why { font-size: var(--fs-small); color: var(--muted); line-height: 1.4; }
+.lap-fine { margin: 0; text-align: center; }
+[hidden] { display: none !important; }
+@media (max-width: 900px) { .budget-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
