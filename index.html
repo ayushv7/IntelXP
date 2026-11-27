@@ -115,6 +115,7 @@
           <div class="hud-bl hud-speed"><b id="hud-speed">0</b><span>KM/H</span></div>
           <div class="hud-br"><canvas id="minimap" width="120" height="120"></canvas></div>
         </div>
+        <div class="boost-hint" id="boost-hint" aria-live="polite"><kbd class="bh-key">SHIFT</kbd><span class="bh-text">Press SHIFT to BOOST</span></div>
         <canvas class="wipe" id="wipe" aria-hidden="true"></canvas>
         <div class="flash" id="flash" aria-hidden="true"></div>
 
@@ -193,23 +194,32 @@
       </div>
     </section>
 
-    <!-- 6. RECOMMENDATION: "Your AI laptop" =========================== -->
+    <!-- 6. CHIP: "Your AI processor" ================================= -->
     <section class="screen modern" id="screen-rec" data-screen="rec">
       <button class="corner-btn" data-action="back-quiz" aria-label="Edit answers" title="Edit answers">◀</button>
-      <div class="modern-inner rec-inner">
-        <div class="rec-left"><div class="rec-art" id="rec-art"></div><div class="rec-also" id="rec-also"></div></div>
-        <div class="rec-info">
-          <p class="kicker" id="rec-kicker">YOUR AI LAPTOP</p>
-          <h1 class="m-h1 hero-name" id="rec-name">AI Laptop</h1>
-          <p class="powered" id="rec-powered"></p>
-          <p class="pick-meta" id="pick-meta"></p>
-          <ul class="benefits" id="rec-benefits"></ul>
-          <p class="rec-why" id="rec-why"></p>
+      <div class="modern-inner chip-inner">
+        <div class="chip-halo big"><img id="rec-chip-img" src="assets/chip-ultra7.svg" alt="" width="260" height="260" /></div>
+        <div class="chip-info">
+          <p class="kicker">YOUR AI PROCESSOR</p>
+          <h1 class="m-h1 chip-name" id="rec-name">Intel® Core™ Ultra</h1>
+          <p class="rec-tagline" id="rec-tagline"></p>
+          <div class="stat-tiles" id="rec-tiles"></div>
           <div class="btn-row">
-            <button class="hex-btn hex-lg" data-action="compare">SEE HOW IT COMPARES ▶</button>
-            <button class="hex-btn hex-md ghost" data-action="specs">TECH SPECS</button>
+            <button class="hex-btn hex-lg" data-action="laptops">SEE RECOMMENDED LAPTOPS ▶</button>
+            <button class="hex-btn hex-md ghost" data-action="compare">HOW IT COMPARES</button>
           </div>
+          <button class="text-btn specs-link" data-action="specs">Tech specs</button>
         </div>
+      </div>
+    </section>
+
+    <!-- 6b. LAPTOPS with this processor ================================= -->
+    <section class="screen modern" id="screen-laptops" data-screen="laptops">
+      <button class="corner-btn" data-action="back-rec" aria-label="Back" title="Back">◀</button>
+      <div class="modern-inner lap-inner">
+        <h2 class="m-h2" id="lap-title">Laptops with this processor</h2>
+        <div class="lap-cards" id="lap-cards"></div>
+        <button class="hex-btn hex-lg" data-action="end">GET THIS LAPTOP ▶</button>
       </div>
     </section>
 
@@ -218,12 +228,11 @@
       <button class="corner-btn" data-action="back-rec" aria-label="Back" title="Back">◀</button>
       <div class="modern-inner cmp-inner">
         <h2 class="cmp-title" id="cmp-title">Intel AI laptop vs a competitor laptop</h2>
-        <p class="cmp-chips" id="cmp-chips"></p>
         <div class="cmp-table" id="cmp-table"></div>
         <p class="cmp-verdict" id="cmp-verdict"></p>
         <p class="cmp-callout" id="cmp-callout"></p>
         <div class="btn-row">
-          <button class="hex-btn hex-lg" data-action="end">GET MY LAPTOP ▶</button>
+          <button class="hex-btn hex-lg" data-action="laptops">SEE RECOMMENDED LAPTOPS ▶</button>
           <button class="text-btn" data-action="sources">Sources</button>
         </div>
       </div>
@@ -276,6 +285,7 @@
   <div class="toast" id="toast" aria-live="polite"></div>
 
   <script src="js/processors.js"></script>
+  <script src="js/boosthint.js"></script>
   <script src="js/game.js"></script>
   <script src="js/sfx.js"></script>
   <script src="js/minis.js"></script>

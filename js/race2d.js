@@ -58,6 +58,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
   let tutorialStart = 0, finishAt = 0, nextTrafficS = 0, fpsFrames = 0, fpsT0 = 0, fpsShown = 0, shake = 0;
   let slowUntil = 0, wantAfterShot = false, shotBefore = false, toastTimer = 0, miniTimer = 0, zoneShown = false;
   let wasBoost = false;
+  const boostHint = window.createBoostHint ? window.createBoostHint(root) : null;
   let traffic = [], obstacles = [], coins = [], ups = [], parts = [];
   const portrait = matchMedia('(orientation: portrait)');
   const inStutter = () => stage < 4 && P.s > CONG_START && P.s < CONG_END;
@@ -385,6 +386,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
     setText(hud.fpsMode, phase === 'race' && (stage === 1 || inStutter()) ? 'SIMULATED' : 'REAL');
     drawMinimap(now / 1000);
     if (window.SFX) { SFX.engine(Math.abs(P.v) / V_BOOST, P.boosting, phase !== 'idle' && phase !== 'done'); if (P.boosting && !wasBoost) SFX.boost(); wasBoost = P.boosting; }
+    boostHint?.update(now, { racing: phase === 'race', boosting: P.boosting, boostReady: P.boost >= 50, straight: Math.abs(slope(P.s + 60) - slope(P.s)) < .03 });
   }
 
   /* ---------------- input */
@@ -406,13 +408,13 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
     Object.keys(keys).forEach(k => keys[k] = false);
     reset();
     shotBefore = false; wantAfterShot = false; slowUntil = 0;
-    phase = 'tutorial'; tutorialStart = performance.now(); hud.tutorial.classList.add('show'); hud.tutBar.style.width = '0%';
+    phase = 'tutorial'; tutorialStart = performance.now(); hud.tutorial.classList.add('show'); boostHint?.reset(); hud.tutBar.style.width = '0%';
     running = true; pending = 0; lastT = performance.now(); fpsT0 = lastT; fpsFrames = 0;
     render(0, 0);
     cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
   }
   function stop() {
-    running = false; phase = 'idle'; cancelAnimationFrame(raf); raf = 0; window.SFX?.stopLoops();
+    running = false; phase = 'idle'; cancelAnimationFrame(raf); raf = 0; window.SFX?.stopLoops(); boostHint?.reset();
     Object.keys(keys).forEach(k => keys[k] = false);
     ['tutorial', 'results', 'toast', 'zoneToast'].forEach(k => hud[k]?.classList.remove('show'));
   }
@@ -420,7 +422,8 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
     restart, stop, mode: '2d',
     get debug() { return { P, stage, phase, quality: 0, fps: fpsShown, upgrades: P.ups, keys: { ...keys }, mode: '2d' }; },
     _jump(s) { P.s = s; nextTrafficS = Math.max(nextTrafficS, s + 60); },
-    _cars() { return traffic.map(c => ({ s: c.s, d: c.d })); }
+    _cars() { return traffic.map(c => ({ s: c.s, d: c.d })); },
+    get _hint() { return boostHint ? { count: boostHint.count, visible: boostHint.visible } : null; }
   };
   window.__game = api;
   return api;

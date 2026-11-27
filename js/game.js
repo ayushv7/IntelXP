@@ -1234,6 +1234,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
   const keys = { left: false, right: false, gas: false, brake: false, boost: false };
   let viewW = 1, viewH = 1;
   let wasBoosting = false;
+  const boostHint = window.createBoostHint ? window.createBoostHint(root) : null;
   let lastActivityPing = 0, rafCount = 0, rafT0 = 0, slowSecs = 0;
   const portraitMQ = matchMedia('(orientation: portrait)');
 
@@ -1768,6 +1769,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
       if (P.boosting && !wasBoosting) SFX.boost();
       wasBoosting = P.boosting;
     }
+    boostHint?.update(now, { racing: phase === 'race', boosting: P.boosting, boostReady: P.boost >= 50, straight: Math.abs(slope(P.s + 60) - slope(P.s)) < .03 });
     if (!shotBefore && stage === 1 && phase === 'race' && P.time > 1.2) { shotBefore = true; snap('res-before'); }
     if (wantAfterShot) { wantAfterShot = false; snap('res-after'); hud.results.classList.add('show'); }
 
@@ -1805,7 +1807,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     root.querySelectorAll('.tc-btn.held').forEach(b => b.classList.remove('held'));
     resetState();
     shotBefore = false; wantAfterShot = false; slowUntil = 0; hud.wipe?.classList.remove('run');
-    phase = 'tutorial'; tutorialStart = performance.now(); orbit = 0;
+    phase = 'tutorial'; tutorialStart = performance.now(); orbit = 0; boostHint?.reset();
     hud.tutorial.classList.add('show');
     hud.tutBar.style.width = '0%';
     running = true;
@@ -1816,7 +1818,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
   }
   function stop() {
     running = false; phase = 'idle';
-    cancelAnimationFrame(raf); raf = 0; window.SFX?.stopLoops();
+    cancelAnimationFrame(raf); raf = 0; window.SFX?.stopLoops(); boostHint?.reset();
     Object.keys(keys).forEach(k => keys[k] = false);
     hud.tutorial.classList.remove('show');
     hud.results.classList.remove('show');
@@ -1835,7 +1837,8 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     restart, stop,
     get debug() { return { P, stage, phase, quality, fps: fpsShown, upgrades: P.ups, keys: { ...keys } }; },
     _jump(s) { P.s = s; nextTrafficS = Math.max(nextTrafficS, s + 60); },
-    _cars() { return traffic.filter(c => c.active).map(c => ({ s: c.s, d: c.d })); }
+    _cars() { return traffic.filter(c => c.active).map(c => ({ s: c.s, d: c.d })); },
+    get _hint() { return boostHint ? { count: boostHint.count, visible: boostHint.visible } : null; }
   };
   window.__game = api;
   return api;

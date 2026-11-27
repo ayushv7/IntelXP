@@ -77,11 +77,14 @@ const actions = {
       return;
     }
     state.tier = computeTier([...state.answers]);
+    state.model = null;
     renderRecommendation();
     show('rec');
   },
   'back-quiz': () => { closeSheet(); show('quiz'); },
-  compare: () => { renderComparison(); show('compare'); },
+  compare: () => { closeSheet(); renderComparison(); show('compare'); },
+  laptops: () => { closeSheet(); renderLaptops(); show('laptops'); },
+  'back-laptops': () => show('laptops'),
   specs: () => showSheet('specs-sheet'),
   sources: () => showSheet('sources-sheet'),
   'close-sheet': () => closeSheet(),
@@ -234,33 +237,51 @@ function laptopSVG(title, accent, { small = false, sub = '' } = {}) {
   </svg>`;
 }
 
+/* ---- chip screen: the processor is the hero */
+function specValue(p, re) { return (p.specs.find(x => re.test(x.label)) || {}).value || ''; }
 function renderRecommendation() {
   const p = DATA.processors[state.tier];
-  const L = p.laptop;
-  const picks = [...state.answers];
-  const hero = heroOf(L), others = (L.models || []).filter(m => m !== hero).slice(0, 2);
-  const chip = hero ? poweredChip(hero.cpu) : chipName(p);
-  $('#rec-art').innerHTML = hero ? laptopSVG(hero.brand, p.accent, { sub: hero.name }) : laptopSVG(L.title, p.accent);
-  $('#rec-art').style.setProperty('--accent', p.accent);
-  $('#rec-kicker').textContent = `YOUR ${L.title.toUpperCase()}`;
-  $('#rec-name').textContent = hero ? `${hero.brand} ${hero.name}` : L.title;
-  $('#rec-powered').textContent = `Powered by ${chip}`;
-  $('#rec-powered').style.setProperty('--accent', p.accent);
-  $('#pick-meta').textContent = hero ? [hero.sku, hero.memory, hero.price && `from ${hero.price}`].filter(Boolean).join(' · ') : '';
-  const sameChip = hero && others.every(m => m.cpu === hero.cpu);
-  $('#rec-also').hidden = !others.length;
-  $('#rec-also').innerHTML = others.length ? `<p class="also-label">${sameChip ? 'Also with this chip' : 'Also consider'}</p><div class="also-cards">` +
-    others.map(m => `<div class="also-card"><b>${esc(m.brand)}</b><span>${esc(m.name)}</span>${m.cpu !== hero.cpu ? `<em>${esc(poweredChip(m.cpu).replace('Intel® ', ''))}</em>` : ''}<i>${m.price ? 'from ' + esc(m.price) : 'Price in store'}</i></div>`).join('') + '</div>' : '';
-  $('#rec-benefits').innerHTML = L.benefits.slice(0, 3).map(b =>
-    `<li><span class="b-ico" style="--accent:${esc(p.accent)}">${lineIcon(b.icon)}</span><span>${esc(b.text)}</span></li>`).join('');
-  const lead = topPick(state.tier, picks);
-  $('#rec-why').innerHTML = `<b>Why it fits you:</b> ${esc(DATA.useCaseReasons[lead] || '')}`;
+  $('#rec-chip-img').src = p.image;
+  $('#rec-chip-img').alt = `${chipName(p)} illustration`;
+  $('.chip-halo').style.setProperty('--chip-accent', p.accent);
+  $('#rec-name').textContent = chipName(p);
+  $('#rec-tagline').textContent = p.tagline;
+  const tiles = [['CPU cores', specValue(p, /cores/i)], ['Max turbo', specValue(p, /turbo/i)], ['AI engine (NPU)', specValue(p, /NPU/i)]].filter(([, v]) => v);
+  $('#rec-tiles').innerHTML = tiles.map(([l, v]) => `<div class="stat-tile" style="--accent:${esc(p.accent)}"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
   // tech-specs sheet content
   $('#sheet-title').textContent = `${chipName(p)} · tech specs`;
   $('#sheet-specs').innerHTML = p.specs.map(s => `<div><span>${esc(s.label)}</span><b>${esc(s.value)}</b></div>`).join('');
   $('#sheet-roles').innerHTML = [['CPU', p.roles.cpu], ['GPU', p.roles.gpu], ['NPU', p.roles.npu]]
     .map(([k, v]) => `<div><b>${k}</b><p>${esc(v)}</p></div>`).join('');
-  $('#sheet-also').textContent = L.alsoIn || '';
+  $('#sheet-also').textContent = p.laptop.alsoIn || '';
+}
+
+/* ---- laptops screen: hero + up to 2 alternatives; tap to select */
+const modelsOf = p => { const ms = (p.laptop.models || []).slice(); const h = heroOf(p.laptop); return h ? [h, ...ms.filter(m => m !== h)].slice(0, 3) : ms.slice(0, 3); };
+const cpuShort = cpu => String(cpu || '').replace(/\s*\(.*\)\s*$/, '');
+function renderLaptops() {
+  const p = DATA.processors[state.tier], ms = modelsOf(p);
+  if (!ms.includes(state.model)) state.model = ms[0] || null;
+  const chipModel = String(p.model || '');
+  const allThisChip = ms.length && ms.every(m => cpuShort(m.cpu).endsWith(' ' + chipModel));
+  // accuracy: only say "this processor" when every listed laptop really has it
+  $('#lap-title').textContent = allThisChip ? 'Laptops with this processor' : 'Recommended laptops';
+  const card = (m, i) => {
+    const hero = i === 0 && m.hero !== false;
+    const meta = [m.memory, m.price && `from ${m.price}`].filter(Boolean).join(' · ');
+    return `<button class="lap-card ${hero ? 'hero' : ''}" data-i="${i}" aria-pressed="${m === state.model}" style="--accent:${esc(p.accent)}">
+      ${hero ? `<span class="ribbon">MOST RECOMMENDED</span><div class="lap-card-art">${laptopSVG(m.brand, p.accent, { sub: m.name })}</div>` : ''}
+      <b class="lc-name">${esc(m.brand)} ${esc(m.name)}</b>
+      <span class="lc-chip">${esc(poweredChip(m.cpu))}</span>
+      ${meta ? `<span class="lc-meta">${esc(meta)}</span>` : ''}
+    </button>`;
+  };
+  $('#lap-cards').innerHTML = `<div class="lap-hero-col">${ms[0] ? card(ms[0], 0) : ''}</div><div class="lap-side-col">${ms.slice(1).map((m, i) => card(m, i + 1)).join('')}</div>`;
+  $('#lap-cards').onclick = e => {
+    const c = e.target.closest('.lap-card'); if (!c) return;
+    state.model = ms[+c.dataset.i]; window.SFX?.tick();
+    $$('#lap-cards .lap-card').forEach(x => x.setAttribute('aria-pressed', String(x === c)));
+  };
 }
 
 function renderComparison() {
@@ -268,9 +289,7 @@ function renderComparison() {
   const c = DATA.comparisons[state.tier];
   const picks = [...state.answers];
   const article = /^[aeiou]|^(AMD|HP|LG|MSI)\b/i.test(c.competitorName) ? 'an' : 'a';
-  const hero = heroOf(p.laptop);
-  $('#cmp-title').innerHTML = `${hero ? esc(hero.brand + ' ' + hero.name) + ` <span class="chipnote">(${esc(poweredChip(hero.cpu).replace(/®|™/g, ''))})</span>` : 'Intel AI laptop'} <span class="vs">vs</span> ${article} ${esc(c.competitorName)} laptop`;
-  $('#cmp-chips').innerHTML = `<span class="intel">${esc(chipName(p))}</span><span class="sep">vs</span><span>${esc(c.competitorName)}</span>`;
+  $('#cmp-title').innerHTML = `${esc(chipName(p))} <span class="vs">vs</span> ${esc(c.competitorName)}`; // chip vs chip
 
   const hits = r => (r.matters || []).filter(m => picks.includes(m));
   const rows = c.rows.map((r, i) => ({ r, i, hl: hits(r).length > 0 }))
@@ -306,12 +325,12 @@ function renderComparison() {
 
 function renderEnd() {
   const p = DATA.processors[state.tier];
-  const L = p.laptop, hero = heroOf(L);
-  $('#end-art').innerHTML = hero ? laptopSVG(hero.brand, p.accent, { small: true, sub: hero.name }) : laptopSVG(L.title, p.accent, { small: true });
-  $('#end-ask').innerHTML = hero ? `Ask for the <b>${esc(hero.brand)} ${esc(hero.name)}</b>` : `Ask for the <b>${esc(L.title)}</b>`;
-  $('#end-sku').textContent = hero ? `SKU ${hero.sku} · Powered by ${poweredChip(hero.cpu)}` : `Powered by ${chipName(p)}`;
-  $('#end-price').hidden = !(hero && hero.price);
-  $('#end-price').textContent = hero && hero.price ? `${hero.price} · Price seen online in 2026, check today's price in store.` : '';
+  const m = state.model || modelsOf(p)[0];
+  $('#end-art').innerHTML = m ? laptopSVG(m.brand, p.accent, { small: true, sub: m.name }) : laptopSVG(p.laptop.title, p.accent, { small: true });
+  $('#end-ask').innerHTML = m ? `Ask for the <b>${esc(m.brand)} ${esc(m.name)}</b>` : `Ask for the <b>${esc(p.laptop.title)}</b>`;
+  $('#end-sku').textContent = m ? `SKU ${m.sku} · ${poweredChip(m.cpu)}` : chipName(p);
+  $('#end-price').hidden = !(m && m.price);
+  $('#end-price').textContent = m && m.price ? `${m.price} · Price seen online in 2026, check today's price in store.` : '';
 }
 
 /* ------------------------------------------------- sheets & overlays */
