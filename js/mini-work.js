@@ -64,7 +64,7 @@
       <div class="wk">
         <canvas class="wk-metro" aria-hidden="true"></canvas>
         <div class="wk-bubbles" aria-hidden="true"></div>
-        <div class="wk-batt" aria-label="${esc(TEXT.battery)}"><span class="wk-batt-ico"><i></i></span><b>100%</b></div>
+        <div class="wk-batt" aria-label="${esc(TEXT.battery)}"><span class="wk-batt-ico"><i></i></span><span class="wk-batt-nub"></span><b>100%</b></div>
         <div class="wk-lap">
           <div class="wk-lid"><div class="wk-screen">
             <div class="mail">
@@ -180,6 +180,9 @@
     function drawMetro(t) {
       const W = cv.width, H = cv.height, P = (x, y, w, h, c) => { g.fillStyle = c; g.fillRect(x | 0, y | 0, Math.max(1, w | 0), Math.max(1, h | 0)); };
       P(0, 0, W, H, '#cdd6e6');                                // carriage wall
+      // rattling carriage: shake grows with the noise (drawn inside the canvas, so layout never moves)
+      const j = quiet || matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : noise;
+      g.setTransform(1, 0, 0, 1, Math.round(rand(-1.5, 1.5) * j), Math.round(rand(-1, 1) * j));
       const wy = H * .1, wh = H * .3;
       for (let k = 0; k < 4; k++) {                              // windows
         const x = 6 + k * (W - 12) / 4, w = (W - 12) / 4 - 6;
@@ -205,6 +208,7 @@
     }
 
     /* ---------------- loop */
+    const drawMetroFrame = t => { drawMetro(t); g.setTransform(1, 0, 0, 1, 0, 0); };
     const bubbles = $('.wk-bubbles');
     let drawT = 0, bubT = 0;
     ctx.loop((dt, t) => {
@@ -224,7 +228,7 @@
         ctx.later(() => b.remove(), 1600);
       }
       window.SFX?.rumble(quiet ? .15 : .35 + noise * .6, offline ? 1 : 0);
-      drawT -= dt; if (drawT <= 0) { drawT = 1 / 20; drawMetro(t); }
+      drawT -= dt; if (drawT <= 0) { drawT = 1 / 20; drawMetroFrame(t); }
     });
     renderStack();
     run();

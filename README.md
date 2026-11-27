@@ -39,6 +39,7 @@ All paths are relative, so the site works from a sub-path. `.nojekyll` is includ
 - Sound is muted by default; use the speaker button in the top-right corner. On phones, crashes and coins vibrate.
 - The end screen shows a QR code to `?result=<tier>&model=<sku>`, which opens a phone card ("Show this in store").
 - `og:image` points at `https://ayushv7.github.io/IntelXP/assets/og-image.png`; change it if you deploy elsewhere.
+- Layout check (dev only): add `?debug=layout` to the URL. Elements that overflow their box, their parent or the viewport get a red outline and are listed in the console; run `__layoutCheck()` again after navigating.
 - Works fully offline once served: no CDN or Google Fonts calls. If WebGL is unavailable, the race shows a fallback and the journey continues.
 
 ## Editing product data: `js/processors.js`

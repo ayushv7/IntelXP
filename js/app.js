@@ -335,10 +335,10 @@ function renderRecommendation() {
   $('#rec-tiles').hidden = $('#rec-batt-note').hidden = !exact;
   $('.specs-link').hidden = $('[data-action="compare"]').hidden = !exact;
   const tiles = [['CPU cores', specValue(p, /cores/i)], ['Max turbo', specValue(p, /turbo/i)], ['AI engine (NPU)', specValue(p, /NPU/i)], ['Battery', '27 hrs*', 'up to ']].filter(([, v]) => v);
-  $('#rec-tiles').innerHTML = tiles.map(([l, v, pre]) => `<div class="stat-tile" style="--accent:${esc(p.accent)}"><b>${pre ? `<small>${esc(pre)}</small>` : ''}${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
+  $('#rec-tiles').innerHTML = tiles.map(([l, v, pre]) => `<div class="tile stat-tile" style="--accent:${esc(p.accent)}"><b>${pre ? `<small>${esc(pre)}</small>` : ''}${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
   // "What AI does for you": max 3, from the shopper's picks (order of the list below)
   const feats = AI_FEATS.filter(f => f.ids.some(id => state.answers.has(id))).slice(0, 3);
-  $('#rec-ai').innerHTML = feats.map(f => `<li style="--accent:${esc(p.accent)}">${lineIcon(f.icon)}<span>${esc(f.text)}</span></li>`).join('');
+  $('#rec-ai').innerHTML = feats.map(f => `<li class="tile" style="--accent:${esc(p.accent)}">${lineIcon(f.icon)}<span>${esc(f.text)}</span></li>`).join('');
   $('.ai-for-you').hidden = !feats.length || (c && !c.copilotPlus);
   // tech-specs sheet content
   $('#sheet-title').textContent = `${chipName(p)} · tech specs`;
@@ -364,14 +364,14 @@ function renderLaptops() {
   const card = (m, pos) => {
     const hero = pos === 0, top = m === ms[0] && m.hero !== false;
     const meta = [m.memory, m.price && `${m.price}*`].filter(Boolean).join(' · ');
-    return `<button class="lap-card ${hero ? 'hero' : ''}" data-k="${ms.indexOf(m)}" aria-pressed="${m === state.model}" style="--accent:${esc(p.accent)}">
-      ${top ? '<span class="ribbon">MOST RECOMMENDED</span>' : ''}
+    return `<button class="card lap-card ${hero ? 'hero' : ''}" data-k="${ms.indexOf(m)}" aria-pressed="${m === state.model}" style="--accent:${esc(p.accent)}">
+      ${top ? '<span class="chip-pill ribbon">MOST RECOMMENDED</span>' : ''}
       ${hero ? `<div class="lap-card-art">${laptopSVG(m.brand, p.accent, { sub: m.name })}</div>` : ''}
       <b class="lc-name">${esc(m.brand)} ${esc(m.name)}</b>
       <span class="lc-chip">${esc(poweredChip(m.cpu))}</span>
-      ${meta ? `<span class="lc-meta">${esc(meta)}</span>` : ''}
       ${m.whyItFits ? `<span class="lc-why">${esc(m.whyItFits)}</span>` : ''}
-      ${hero ? '<span class="batt-badge">All-day battery</span>' : ''}
+      ${meta ? `<span class="lc-meta">${esc(meta)}</span>` : ''}
+      ${hero ? '<span class="chip-pill batt-badge">All-day battery</span>' : ''}
     </button>`;
   };
   const box = $('#lap-cards');
@@ -430,8 +430,8 @@ function renderComparison() {
   };
   $('#cmp-table').innerHTML =
     `<div class="cmp-head"><span></span><span class="intel">Intel</span><span>${esc(c.competitorName.split(/[\s™]/)[0])}</span></div>` +
-    rows.map(({ r, hl }, k) => `<div class="cmp-row ${hl ? 'hl' : ''}" style="animation-delay:${k * 60}ms">
-        <span class="lbl">${esc(r.label)}${hl ? '<em class="tag">Matters to you</em>' : ''}</span>
+    rows.map(({ r, hl }, k) => `<div class="tile cmp-row ${hl ? 'hl' : ''}" style="animation-delay:${k * 60}ms">
+        <span class="lbl">${esc(r.label)}${hl ? '<em class="chip-pill tag">Matters to you</em>' : ''}</span>
         ${cell(r.intel, 'intel', r)}${cell(r.competitor, 'competitor', r)}
         ${r.note ? `<span class="note">${esc(r.note)}</span>` : ''}
       </div>`).join('');
@@ -747,6 +747,11 @@ setTimeout(() => {
   gameModulePromise = window.loadGameModule();
   gameModulePromise.catch(e => { gameModulePromise = null; console.warn('3D engine prefetch failed (will retry on play):', e); });
 }, 1200);
+
+// Dev only: ?debug=layout loads the overflow checker (window.__layoutCheck)
+if (new URLSearchParams(location.search).get('debug') === 'layout') {
+  const sc = document.createElement('script'); sc.src = 'js/debug-layout.js'; document.head.appendChild(sc);
+}
 
 // Expose for automated testing / debugging
 window.__app = { state, show, computeTier, recommendWithBudget, get game() { return game; }, get idleMs() { return performance.now() - lastActivity; } };
