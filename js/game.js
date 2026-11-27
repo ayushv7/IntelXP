@@ -267,7 +267,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     const gr = g.createRadialGradient(w * .4, w * .35, 6, w / 2, w / 2, w / 2);
     gr.addColorStop(0, '#5cc2ff'); gr.addColorStop(1, '#0a5ce6');
     g.fillStyle = gr; g.fillRect(0, 0, w, w);
-    g.strokeStyle = '#ffd25e'; g.lineWidth = 10; g.beginPath(); g.arc(w / 2, w / 2, w / 2 - 7, 0, Math.PI * 2); g.stroke();
+    g.strokeStyle = '#ff2bd6'; g.lineWidth = 10; g.beginPath(); g.arc(w / 2, w / 2, w / 2 - 7, 0, Math.PI * 2); g.stroke();
     g.fillStyle = '#ffffff'; g.font = 'bold 56px Arial, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
     g.lineWidth = 6; g.strokeStyle = '#0a2f8f'; g.strokeText('AI', w / 2, w / 2 + 3); g.fillText('AI', w / 2, w / 2 + 3);
   });
@@ -489,8 +489,8 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     // billboards rotate the 4 hero laptops from processors.js: "[Brand Model] · Intel Core Ultra AI laptop"
     const D = window.PROCESSOR_DATA, heroes = D ? D.tierOrder.map(t => { const ms = D.processors[t].laptop?.models || []; return ms.find(m => m.hero) || ms[0]; }).filter(Boolean) : [];
     const boards = heroes.length
-      ? Array.from({ length: 5 }, (_, i) => { const h = heroes[i % heroes.length]; return ['Intel® Core™ Ultra AI laptop', `${h.brand} ${h.name}`, i % 2 ? '#ffffff' : '#ffd25e']; })
-      : [['INTEL CORE ULTRA', 'AI PC', '#ffd25e'], ['ON-DEVICE AI', 'NPU', '#ffffff']];
+      ? Array.from({ length: 5 }, (_, i) => { const h = heroes[i % heroes.length]; return ['Intel® Core™ Ultra AI laptop', `${h.brand} ${h.name}`, i % 2 ? '#ffffff' : '#ff2bd6']; })
+      : [['INTEL CORE ULTRA', 'AI PC', '#ff2bd6'], ['ON-DEVICE AI', 'NPU', '#ffffff']];
     const postPair = M(0xf4f1ea, { loColor: 0xb0b0b0, r: .5, m: .3 });
     boards.forEach(([a, b, c], i) => {
       const tex = billboardTex(a, b, c);
@@ -532,7 +532,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
   }
   gate(0, 'START', 0x1f6bff);
   gate(CONG_START, 'TRAFFIC AHEAD', 0xff8a3d);
-  gate(TRACK_LEN, 'FINISH', 0xffc53d);
+  gate(TRACK_LEN, 'FINISH', 0xff2bd6);
 
   /* -------------------------------------------------------- cars */
   const player = new THREE.Group(); scene.add(player);
@@ -774,12 +774,12 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
   const obstacles = [];
   const debris = []; // knocked pieces: free rigid bodies with gravity, bounce, fade
 
-  // Coins — glossy gold (reflect the sky) + guaranteed AI upgrade coins
+  // Coins — glossy neon pink (reflect the sky) + guaranteed AI upgrade coins
   const smallCoinGeo = new THREE.CylinderGeometry(.62, .62, .16, 28); smallCoinGeo.rotateX(Math.PI / 2);
-  const goldPair = M(0xffc53d, { loColor: 0xd9a93a, m: 1, r: .18, e: 0x5a3a00, ei: .5, env: 1.4 });
+  const goldPair = M(0xff2bd6, { loColor: 0xc21f9a, m: 1, r: .18, e: 0x5a0046, ei: .5, env: 1.4 });
   const coins = [];
   const upCoinGeo = new THREE.CylinderGeometry(1.35, 1.35, .3, 48); upCoinGeo.rotateX(Math.PI / 2);
-  const upRim = M(0xffc53d, { loColor: 0xd9a93a, m: 1, r: .15, e: 0x6a4500, ei: .8, neon: true, env: 1.5 });
+  const upRim = M(0xff2bd6, { loColor: 0xc21f9a, m: 1, r: .15, e: 0x6a0052, ei: .8, neon: true, env: 1.5 });
   const upFace = M(0xffffff, { loBasic: true, loMap: coinFaceTex, loColor: 0xffffff, hiBasic: true, map: coinFaceTex, toneMapped: false });
   const beamMat = new THREE.MeshBasicMaterial({ color: 0x5cc8ff, transparent: true, opacity: .2, depthWrite: false, side: THREE.DoubleSide });
   const upCoins = COIN_S.map((s, i) => {
@@ -789,7 +789,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     m.position.y = 1.9;
     outline(m, .05);
     const beam = new THREE.Mesh(new THREE.CylinderGeometry(.9, 1.4, 40, 24, 1, true), beamMat); beam.position.y = 20;
-    const halo = new THREE.Mesh(new THREE.TorusGeometry(1.9, .08, 10, 48), new THREE.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: .9 }));
+    const halo = new THREE.Mesh(new THREE.TorusGeometry(1.9, .08, 10, 48), new THREE.MeshBasicMaterial({ color: 0xffd1f4, transparent: true, opacity: .9 }));
     halo.position.y = 1.9;
     g.add(m, beam, halo); scene.add(g);
     return { g, coin: m, halo, s, d: LANES[(i + 1) % 4], taken: false };
@@ -835,7 +835,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     }
     pGeo.attributes.position.needsUpdate = true; pGeo.attributes.color.needsUpdate = true;
   }
-  const C_CYAN = [.25, .85, 1], C_GOLD = [1, .78, .2], C_BLUE = [.15, .45, 1], C_WHITE = [1, 1, 1], C_RED = [1, .32, .35], C_PURPLE = [.7, .4, 1];
+  const C_CYAN = [.25, .85, 1], C_PINK = [1, .17, .84], C_BLUE = [.15, .45, 1], C_WHITE = [1, 1, 1], C_RED = [1, .32, .35], C_PURPLE = [.7, .4, 1];
 
   // ambient neon dust (stage 4)
   const DUST = 160;
@@ -843,7 +843,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
   const dGeo = new THREE.BufferGeometry();
   dGeo.setAttribute('position', new THREE.BufferAttribute(dPos, 3).setUsage(THREE.DynamicDrawUsage));
   dGeo.setAttribute('color', new THREE.BufferAttribute(dCol, 4));
-  for (let i = 0; i < DUST; i++) { const c = pick([C_CYAN, C_GOLD, C_WHITE]); dCol.set([...c, .85], i * 4); }
+  for (let i = 0; i < DUST; i++) { const c = pick([C_CYAN, C_PINK, C_WHITE]); dCol.set([...c, .85], i * 4); }
   const dust = new THREE.Points(dGeo, new THREE.PointsMaterial({ size: .32, map: dotTex, vertexColors: true, transparent: true, depthWrite: false, toneMapped: false }));
   dust.frustumCulled = false; dust.visible = false; scene.add(dust);
   const dustRel = new Float32Array(DUST * 3);
@@ -939,7 +939,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
   const flagGeo = new THREE.PlaneGeometry(2.2, 1.3, 16, 4); flagGeo.translate(1.1, 0, 0);
   const poleGeo = new THREE.CylinderGeometry(.06, .07, 6, 8); poleGeo.translate(0, 3, 0);
   const polePair = M(0xe0e4ea, { loColor: 0x9a9a9a, m: .8, r: .3 });
-  const flagPairs = [0x1f6bff, 0xffffff, 0xffc53d].map((c, i) => { const p = M(c, { loColor: c, r: .7, side: THREE.DoubleSide }); injectVertex(p.hi, 'wave' + i, WAVE); return p; });
+  const flagPairs = [0x1f6bff, 0xffffff, 0xff2bd6].map((c, i) => { const p = M(c, { loColor: c, r: .7, side: THREE.DoubleSide }); injectVertex(p.hi, 'wave' + i, WAVE); return p; });
   for (const base of [0, TRACK_LEN]) for (let k = -2; k <= 3; k++) for (const side of [-1, 1]) {
     const s = base + k * 16, f = frame(s, side * 12, {});
     const pole = new THREE.Mesh(poleGeo, null); dual(pole, polePair); pole.position.set(f.x, 0, f.z); pole.castShadow = true; scene.add(pole);
@@ -1046,7 +1046,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
   }
   function contactFX(A, B, j) {
     const f = frame((A.s + B.s) / 2, (A.d + B.d) / 2, tmpF), n = Math.min(40, 8 + j / 1500) | 0;
-    burst(f.x, .8, f.z, n, [C_GOLD, C_WHITE, C_GOLD], 9, .5);
+    burst(f.x, .8, f.z, n, [C_PINK, C_WHITE, C_PINK], 9, .5);
     if (stage >= 3) {
       burst(f.x, .9, f.z, n >> 1, [[.18, .18, .2], [.45, .45, .5], [.8, .8, .85]], 6, .8); // debris chips
       for (let i = 0; i < 6; i++) spawnSmoke(f.x + rand(-1, 1), .6, f.z + rand(-1, 1), rand(-2, 2), rand(.5, 2), rand(-2, 2), .85, .85, .88, rand(.8, 1.4));
@@ -1087,7 +1087,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     if (Math.abs(c.d) > lim) { // bounce off the guard rail
       const sg = Math.sign(c.d); c.d = sg * lim;
       if (c.vd * sg > 0) {
-        if (Math.abs(c.vd) > 1.5) { const f = frame(c.s, sg * 10.4, tmpF); burst(f.x, .6, f.z, 10, [C_GOLD, C_WHITE], 6, .4); }
+        if (Math.abs(c.vd) > 1.5) { const f = frame(c.s, sg * 10.4, tmpF); burst(f.x, .6, f.z, 10, [C_PINK, C_WHITE], 6, .4); }
         c.vd = -c.vd * .45; c.w -= sg * rand(.3, 1.2); c.wob = Math.min(1.5, c.wob + .5);
       }
     }
@@ -1102,7 +1102,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
       debris.push({ m: ch, vel, ang: new THREE.Vector3(rand(-9, 9), rand(-5, 5), rand(-9, 9)).multiplyScalar(o.lift), t: 0, faded: false });
     }
     scene.remove(o.g);
-    burst(f.x, .6, f.z, 10, [C_GOLD, C_WHITE], 5, .35);
+    burst(f.x, .6, f.z, 10, [C_PINK, C_WHITE], 5, .35);
   }
   function updateDebris(dt) {
     for (let i = debris.length - 1; i >= 0; i--) {
@@ -1171,7 +1171,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     sg.strokeStyle = 'rgba(255,255,255,.12)';
     sg.beginPath(); sg.arc(cx, cy, r, a0, a1); sg.stroke();
     const grad = sg.createLinearGradient(0, W, W, 0);
-    grad.addColorStop(0, '#1f8bff'); grad.addColorStop(.7, '#00e0ff'); grad.addColorStop(1, boosting ? '#d58bff' : '#ffc845');
+    grad.addColorStop(0, '#1f8bff'); grad.addColorStop(.7, '#00e0ff'); grad.addColorStop(1, boosting ? '#d58bff' : '#ff2bd6');
     sg.strokeStyle = grad;
     if (f > .002) { sg.beginPath(); sg.arc(cx, cy, r, a0, a0 + (a1 - a0) * f); sg.stroke(); }
     sg.lineCap = 'butt'; sg.lineWidth = 2; sg.strokeStyle = 'rgba(255,255,255,.35)';
@@ -1209,10 +1209,10 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     // finish
     if (TRACK_LEN - P.s < 520) {
       const [x, y] = toMap(frame(TRACK_LEN, -9, _m).x, _m.z), [x2, y2] = toMap(frame(TRACK_LEN, 9, _m).x, _m.z);
-      mg.strokeStyle = '#ffc845'; mg.lineWidth = 3; mg.beginPath(); mg.moveTo(x, y); mg.lineTo(x2, y2); mg.stroke();
+      mg.strokeStyle = '#ff2bd6'; mg.lineWidth = 3; mg.beginPath(); mg.moveTo(x, y); mg.lineTo(x2, y2); mg.stroke();
     }
     const dot = (s, d, col, r) => { if (s < P.s - 120 || s > P.s + 520) return; frame(s, d, _m); const [x, y] = toMap(_m.x, _m.z); mg.fillStyle = col; mg.beginPath(); mg.arc(x, y, r, 0, Math.PI * 2); mg.fill(); };
-    for (const c of coins) if (!c.taken) dot(c.s, c.d, '#ffc845', 1.6);
+    for (const c of coins) if (!c.taken) dot(c.s, c.d, '#ff2bd6', 1.6);
     for (const o of obstacles) if (!o.hit) dot(o.s, o.d, '#ff8a1a', 1.8);
     for (const c of traffic) if (c.active) dot(c.s, c.d, '#ff4d6d', 2.4);
     for (const u of upCoins) if (!u.taken) { dot(u.s, u.d, 'rgba(0,224,255,.35)', 6 + Math.sin(t * 6) * 2); dot(u.s, u.d, '#00e0ff', 3.5); }
@@ -1382,7 +1382,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     if (i === 2) hud.system.classList.add('ai');
     showToast(i);
     const f = frame(u.s, u.d, {});
-    burst(f.x, 1.9, f.z, 160, [C_CYAN, C_GOLD, C_WHITE, C_BLUE], 14, 1.2);
+    burst(f.x, 1.9, f.z, 160, [C_CYAN, C_PINK, C_WHITE, C_BLUE], 14, 1.2);
     stage = i + 2;
     if (stage === 3) {
       const pf = frame(P.s, P.d, {});
@@ -1474,7 +1474,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
       if (P.vd * sg > 0) { if (Math.abs(P.vd) > 2) shake = Math.max(shake, .35); P.vd = -P.vd * .4; }
       P.v -= P.v * .35 * dt;
       if (P.v > 8) window.SFX?.scrape();
-      if (P.v > 8 && Math.random() < .7) { const sf = frame(P.s + rand(-1.5, 1.5), sg * (PLAYER_LIMIT + .9), tmpF); burst(sf.x, .5, sf.z, 2, [C_GOLD, C_WHITE], 6, .35); }
+      if (P.v > 8 && Math.random() < .7) { const sf = frame(P.s + rand(-1.5, 1.5), sg * (PLAYER_LIMIT + .9), tmpF); burst(sf.x, .5, sf.z, 2, [C_PINK, C_WHITE], 6, .35); }
     }
     P.hitCd = Math.max(0, P.hitCd - dt);
 
@@ -1521,7 +1521,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
       if (Math.abs(ds) < 2.6 && Math.abs(c.d - P.d) < 1.9) {
         c.taken = true; c.m.visible = false; P.coins++; P.score += 100; window.SFX?.coin();
         P.boost = Math.min(100, P.boost + 12); P.fuel = Math.min(100, P.fuel + 4);
-        burst(c.m.position.x, 1, c.m.position.z, 24, [C_GOLD, C_WHITE], 7, .6);
+        burst(c.m.position.x, 1, c.m.position.z, 24, [C_PINK, C_WHITE], 7, .6);
       }
     }
     // --- upgrade coins: guaranteed, in order (they home onto the player)
@@ -1556,7 +1556,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     if (racing && P.s >= TRACK_LEN) {
       phase = 'finishing'; finishAt = performance.now(); window.SFX?.finish();
       const f = frame(TRACK_LEN, 0, tmpF);
-      burst(f.x, 4, f.z, 260, [C_GOLD, C_CYAN, C_WHITE, C_PURPLE], 18, 1.6);
+      burst(f.x, 4, f.z, 260, [C_PINK, C_CYAN, C_WHITE, C_PURPLE], 18, 1.6);
     }
     if (phase === 'finishing' && (P.v < 1 || performance.now() - finishAt > 2600)) showResults();
 

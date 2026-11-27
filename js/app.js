@@ -575,23 +575,6 @@ setInterval(() => {
 }, 250);
 
 /* ---------------------------------------------- landing pixel visuals */
-function drawPixelChip() {
-  const c = $('#pixel-chip'); const g = c.getContext('2d');
-  const P = (x, y, w, h, col) => { g.fillStyle = col; g.fillRect(x, y, w, h); };
-  g.clearRect(0, 0, 32, 32);
-  for (let i = 0; i < 6; i++) { // pins
-    const p = 7 + i * 3.4 | 0;
-    P(p, 1, 2, 4, '#7fe9ff'); P(p, 27, 2, 4, '#7fe9ff'); P(1, p, 4, 2, '#7fe9ff'); P(27, p, 4, 2, '#7fe9ff');
-  }
-  P(5, 5, 22, 22, '#00e0ff'); P(6, 6, 20, 20, '#0a2f8f'); P(7, 7, 18, 18, '#0068ff');
-  P(9, 9, 14, 14, '#06142e');
-  // "AI" in pixels
-  const A = ['0110', '1001', '1111', '1001', '1001'], I = ['111', '010', '010', '010', '111'];
-  A.forEach((r, y) => [...r].forEach((b, x) => b === '1' && P(10 + x, 13 + y, 1, 1, '#ffffff')));
-  I.forEach((r, y) => [...r].forEach((b, x) => b === '1' && P(17 + x, 13 + y, 1, 1, '#ffc845')));
-  P(10, 10, 2, 1, '#00e0ff'); P(20, 21, 2, 1, '#00e0ff');
-}
-
 let starRAF = 0, stars = [];
 function startStars() {
   if (starRAF) return;
@@ -640,7 +623,6 @@ function stopStars() {
 /* ---------------------------------------------------------------- boot */
 if (navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches) document.body.classList.add('touch');
 buildQuiz();
-drawPixelChip();
 const SHARE = new URLSearchParams(location.search);
 if (SHARE.get('result') && renderShare(SHARE.get('result'), SHARE.get('model'))) {
   document.body.classList.add('share-view');

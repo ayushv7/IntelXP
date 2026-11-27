@@ -174,7 +174,7 @@ window.PROCESSOR_DATA = {
       model: '388H',
       tagline: 'A thin AI laptop that games like a gaming laptop',
       image: 'assets/chip-ultra9.svg',
-      accent: '#ffc845',
+      accent: '#ff2bd6',
       placeholder: false,
       laptop: {
         title: 'Gaming AI Laptop',

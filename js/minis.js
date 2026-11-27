@@ -247,7 +247,7 @@ window.Minis = (() => {
         g.textAlign = 'center'; g.textBaseline = 'middle';
         const text = BOARDS[(idx + BOARDS.length) % BOARDS.length];
         let fs = bh * .34; g.font = `900 ${fs}px Arial`; const tw = g.measureText(text).width; if (tw > bw * .9) { fs *= bw * .9 / tw; g.font = `900 ${fs}px Arial`; }
-        g.fillStyle = '#ffd25e'; g.fillText(text, x + bw / 2, by + bh * .4);
+        g.fillStyle = '#ff2bd6'; g.fillText(text, x + bw / 2, by + bh * .4);
         g.fillStyle = '#dff1ff'; g.font = `700 ${bh * .15}px Arial`; g.fillText('Intel® Core™ Ultra AI laptop', x + bw / 2, by + bh * .74);
       }
       // layer 2: poles + wires (fast)
