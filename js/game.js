@@ -1233,10 +1233,10 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
   let quality = 0, shake = 0, camInit = false, toastTimer = 0, zoneShown = false, nearLagHint = false;
   const keys = { left: false, right: false, gas: false, brake: false, boost: false };
   let viewW = 1, viewH = 1;
-  let wasBoosting = false;
+  let wasBoosting = false, demoMode = false, aiLane = LANES[1];
   const boostHint = window.createBoostHint ? window.createBoostHint(root) : null;
   let lastActivityPing = 0, rafCount = 0, rafT0 = 0, slowSecs = 0;
-  const portraitMQ = matchMedia('(orientation: portrait)');
+  const portraitMQ = matchMedia('(orientation: portrait)'), reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
 
   function inStutterZone() { return stage < 4 && P.s > CONG_START && P.s < CONG_END; }
 
@@ -1648,7 +1648,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     camPos.x = damp(camPos.x, tmpV.x, 6, dt); camPos.y = damp(camPos.y, tmpV.y, 4, dt); camPos.z = damp(camPos.z, tmpV.z, 12, dt);
     camLook.lerp(look, 1 - Math.exp(-dt * 7));
     shake = Math.max(0, shake - dt * 2.4);
-    const sh = shake * shake * .22 + (P.boosting ? .015 : 0) + (stage >= 3 ? spd * spd * .025 : 0); // collision + subtle speed shake
+    const sh = (shake * shake * .22 + (P.boosting ? .015 : 0) + (stage >= 3 ? spd * spd * .025 : 0)) * (reduceMotion.matches ? .15 : 1); // collision + subtle speed shake
     camera.position.set(camPos.x + rand(-sh, sh), camPos.y + rand(-sh, sh), camPos.z);
     camera.lookAt(camLook);
     const fov = 60 + spd * 16 + (P.boosting ? 4 : 0);
@@ -1708,7 +1708,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
       rafCount++;
       if (now - rafT0 >= 1000) { slowSecs = rafCount * 1000 / (now - rafT0) < 20 ? slowSecs + 1 : 0; rafCount = 0; rafT0 = now; if (slowSecs >= 3) { stop(); onFallback('slow'); return; } }
     } else { rafCount = 0; rafT0 = now; slowSecs = 0; }
-    if (document.body.classList.contains('touch') && portraitMQ.matches) { lastT = now; return; } // paused behind "rotate" overlay
+    if (!demoMode && document.body.classList.contains('touch') && portraitMQ.matches) { lastT = now; return; } // paused behind "rotate" overlay
     lastT = now;
     pending = Math.min(.25, pending + realDt);
 
@@ -1739,7 +1739,8 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
 
     const dt = pending; pending = 0;
     // held touch controls emit no new DOM events: keep the kiosk idle timer alive while driving
-    if (phase === 'race' && (keys.gas || keys.brake || keys.left || keys.right || keys.boost) && now - lastActivityPing > 1000) {
+    if (demoMode && phase === 'race') autopilot();
+    if (!demoMode && phase === 'race' && (keys.gas || keys.brake || keys.left || keys.right || keys.boost) && now - lastActivityPing > 1000) {
       lastActivityPing = now; onActivity();
     }
     let rem = now < slowUntil ? dt * .25 : dt; // 0.4 s slow-mo on upgrade pickup
@@ -1769,7 +1770,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
       if (P.boosting && !wasBoosting) SFX.boost();
       wasBoosting = P.boosting;
     }
-    boostHint?.update(now, { racing: phase === 'race', boosting: P.boosting, boostReady: P.boost >= 50, straight: Math.abs(slope(P.s + 60) - slope(P.s)) < .03 });
+    boostHint?.update(now, { racing: phase === 'race' && !demoMode, boosting: P.boosting, boostReady: P.boost >= 50, straight: Math.abs(slope(P.s + 60) - slope(P.s)) < .03 });
     if (!shotBefore && stage === 1 && phase === 'race' && P.time > 1.2) { shotBefore = true; snap('res-before'); }
     if (wantAfterShot) { wantAfterShot = false; snap('res-after'); hud.results.classList.add('show'); }
 
@@ -1782,7 +1783,9 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
 
   function showResults() {
     if (phase === 'done') return;
+    if (demoMode) { demo(); return; }
     phase = 'done';
+    document.dispatchEvent(new CustomEvent('race-finished', { detail: { time: P.time + P.penalty } }));
     wantAfterShot = true; // captured right after the next render, then the card opens
   }
 
@@ -1798,7 +1801,36 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     } catch (e) { console.warn('Warm-up skipped:', e); }
   }
 
+  /* ---- attract-mode autopilot: pick the lane with the most free road ahead */
+  function autopilot() {
+    const look = 40 + P.v * 1.1;
+    const clearOf = ld => {
+      let c = look;
+      for (const t of traffic) if (t.active && Math.abs(t.d - ld) < 2.8 && t.s > P.s - 4) c = Math.min(c, t.s - t.hl - P.s);
+      for (const o of obstacles) if (!o.hit && Math.abs(o.d - ld) < o.w / 2 + 1.8 && o.s > P.s - 3) c = Math.min(c, o.s - P.s);
+      return c;
+    };
+    let best = aiLane, bestC = clearOf(aiLane);
+    const cur = bestC;
+    for (const ld of LANES) { const c = clearOf(ld) - Math.abs(ld - P.d) * .8; if (c > bestC + 6) { best = ld; bestC = c; } }
+    aiLane = best;
+    const err = aiLane - P.d;
+    keys.left = err < -.5; keys.right = err > .5; keys.gas = true;
+    keys.brake = cur < 14 && Math.abs(err) > 1 && P.v > 22;
+    keys.boost = P.boost > 30 && cur >= look - 1 && Math.abs(err) < 1;
+  }
+  /** Silent attract loop: AI-max stage (all upgrades), AI-driven car, restarts at the finish. */
+  function demo() {
+    restart(); demoMode = true; aiLane = P.d;
+    hud.tutorial.classList.remove('show'); phase = 'race';
+    upCoins.forEach(u => { u.taken = true; u.g.visible = false; });
+    slots.forEach(x => x.classList.add('on')); cps.forEach(c => c.classList.add('got'));
+    P.ups = 3; P.v = 30; stage = 4; setText(hud.system, UPGRADES[2].system); hud.system.classList.add('ai');
+    applyVisualStage();
+  }
+
   function restart() {
+    demoMode = false;
     hud.results.classList.remove('show');
     hud.error.classList.remove('show');
     hud.toast.classList.remove('show');
@@ -1817,7 +1849,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     raf = requestAnimationFrame(tick);
   }
   function stop() {
-    running = false; phase = 'idle';
+    running = false; phase = 'idle'; demoMode = false;
     cancelAnimationFrame(raf); raf = 0; window.SFX?.stopLoops(); boostHint?.reset();
     Object.keys(keys).forEach(k => keys[k] = false);
     hud.tutorial.classList.remove('show');
@@ -1834,7 +1866,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
   warmUp();
 
   const api = {
-    restart, stop,
+    restart, stop, demo,
     get debug() { return { P, stage, phase, quality, fps: fpsShown, upgrades: P.ups, keys: { ...keys } }; },
     _jump(s) { P.s = s; nextTrafficS = Math.max(nextTrafficS, s + 60); },
     _cars() { return traffic.filter(c => c.active).map(c => ({ s: c.s, d: c.d })); },

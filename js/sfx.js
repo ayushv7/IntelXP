@@ -5,8 +5,10 @@
 window.SFX = (() => {
   const AC = window.AudioContext || window.webkitAudioContext;
   let ctx = null, master = null, noiseBuf = null;
-  let muted = (() => { try { return localStorage.getItem('sfx-muted') === '1'; } catch { return false; } })();
+  let muted = (() => { try { return localStorage.getItem('sfx-muted') !== '0'; } catch { return true; } })(); // muted by default
   const VOL = .55;
+  let silent = false; // attract mode: no sound, no haptics
+  const buzz = ms => { if (!silent && navigator.vibrate) try { navigator.vibrate(ms); } catch {} };
 
   function ensure() {
     if (!AC) return null;
@@ -22,7 +24,7 @@ window.SFX = (() => {
   ['pointerdown', 'keydown', 'touchstart'].forEach(e => addEventListener(e, ensure, { passive: true, capture: true }));
   document.addEventListener('visibilitychange', () => { if (!ctx) return; document.hidden ? ctx.suspend() : ctx.resume(); });
 
-  const live = () => ctx && !muted && ctx.state === 'running';
+  const live = () => ctx && !muted && !silent && ctx.state === 'running';
   function noise() {
     if (!noiseBuf) { noiseBuf = ctx.createBuffer(1, ctx.sampleRate, ctx.sampleRate); const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1; }
     return noiseBuf;
@@ -68,18 +70,18 @@ window.SFX = (() => {
     const rpm = 45 + v * 120 + gear * 55 + (boosting ? 30 : 0);
     eng.o1.frequency.setTargetAtTime(rpm, now, .06); eng.o2.frequency.setTargetAtTime(rpm, now, .06);
     eng.f.frequency.setTargetAtTime(380 + v * 1500 + (boosting ? 900 : 0), now, .08);
-    eng.g.gain.setTargetAtTime(on && !muted ? .05 + v * .05 : 0, now, .1);
+    eng.g.gain.setTargetAtTime(on && !muted && !silent ? .05 + v * .05 : 0, now, .1);
   }
   function skid(amount) {
     if (!ctx || ctx.state !== 'running') return;
     if (!skidN) skidN = loopNoise('bandpass', 950, 3);
-    skidN.g.gain.setTargetAtTime(!muted ? Math.max(0, Math.min(1, amount)) * .16 : 0, ctx.currentTime, .05);
+    skidN.g.gain.setTargetAtTime(!muted && !silent ? Math.max(0, Math.min(1, amount)) * .16 : 0, ctx.currentTime, .05);
   }
   function rumble(amount, tunnel = 0) {
     if (!ctx || ctx.state !== 'running') return;
     if (!rumbleN) rumbleN = loopNoise('lowpass', 160, 1);
     rumbleN.b.frequency.setTargetAtTime(160 + tunnel * 260, ctx.currentTime, .2);
-    rumbleN.g.gain.setTargetAtTime(!muted ? amount * (.12 + tunnel * .1) : 0, ctx.currentTime, .15);
+    rumbleN.g.gain.setTargetAtTime(!muted && !silent ? amount * (.12 + tunnel * .1) : 0, ctx.currentTime, .15);
   }
   function stopLoops() { engine(0, false, false); skid(0); rumble(0); }
 
@@ -95,7 +97,7 @@ window.SFX = (() => {
     whoosh: () => hiss({ dur: .45, vol: .12, freq: 300, f2: 2600, type: 'bandpass', q: 1.2, attack: .12 }),
     // race
     go: () => { tone({ f: 880, type: 'square', dur: .12, vol: .1 }); tone({ f: 1760, type: 'square', t: .1, dur: .35, vol: .1 }); },
-    coin: () => { if (!throttle('coin', 40)) return; tone({ f: 988, type: 'square', dur: .06, vol: .07 }); tone({ f: 1319, type: 'square', t: .055, dur: .16, vol: .07 }); },
+    coin: () => { if (!throttle('coin', 40)) return; buzz(30); tone({ f: 988, type: 'square', dur: .06, vol: .07 }); tone({ f: 1319, type: 'square', t: .055, dur: .16, vol: .07 }); },
     upgrade: (i = 0) => {
       const base = [392, 440, 523][i] || 440;
       [1, 1.25, 1.5, 2, 2.5].forEach((m, k) => tone({ f: base * m, type: 'triangle', t: k * .06, dur: .3, vol: .13 }));
@@ -105,6 +107,7 @@ window.SFX = (() => {
     boost: () => { if (!throttle('boost', 300)) return; hiss({ dur: .5, vol: .16, freq: 400, f2: 3000, type: 'bandpass', q: 1.5, attack: .05 }); },
     crash: (k = 1) => {
       if (!throttle('crash', 120)) return;
+      buzz(30);
       k = Math.max(.3, Math.min(1, k));
       tone({ f: 110, f2: 38, type: 'sine', dur: .35, vol: .45 * k });          // body thump
       hiss({ dur: .4, vol: .32 * k, freq: 900, f2: 200, type: 'lowpass' });     // crunch
@@ -124,6 +127,8 @@ window.SFX = (() => {
     beep: () => tone({ f: 660, f2: 440, type: 'square', dur: .09, vol: .05 }),
     engine, skid, rumble, stopLoops,
     get muted() { return muted; },
+    get silent() { return silent; },
+    set silent(v) { silent = !!v; if (silent) stopLoops(); },
     get state() { return ctx ? ctx.state : 'none'; },
     toggleMute() {
       muted = !muted;

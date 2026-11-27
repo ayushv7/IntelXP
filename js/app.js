@@ -8,6 +8,7 @@ const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const IDLE_RESET_MS = 60000;   // reset to landing after 60 s of inactivity
 const IDLE_RESET_END_MS = 90000; // the end screen stays up longer for the store associate
 const IDLE_WARN_BEFORE_MS = 10000; // show "still there?" 10 s before reset
+const ATTRACT_AFTER_MS = 30000;    // landing idle -> silent demo race
 
 const state = {
   screen: 'landing',
@@ -347,6 +348,26 @@ function renderEnd() {
   $('#end-sku').textContent = m ? `SKU ${m.sku} · ${poweredChip(m.cpu)}` : chipName(p);
   $('#end-price').hidden = !(m && m.price);
   $('#end-price').textContent = m && m.price ? `${m.price} · Price seen online in 2026, check today's price in store.` : '';
+  const url = new URL(location.pathname, location.origin);
+  url.searchParams.set('result', state.tier);
+  if (m && m.sku) url.searchParams.set('model', m.sku);
+  try {
+    const qr = window.qrcode(0, 'M'); qr.addData(url.href); qr.make();
+    $('#end-qr').innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+    $('.end-qr').hidden = false;
+  } catch { $('.end-qr').hidden = true; }
+}
+
+/* ---- phone card from the QR: ?result=<tier>&model=<sku> */
+function renderShare(tier, sku) {
+  const p = DATA.processors[tier]; if (!p) return false;
+  const all = DATA.tierOrder.flatMap(t => DATA.processors[t].laptop.models || []);
+  const m = all.find(x => x.sku === sku) || heroOf(p.laptop);
+  $('#share-art').innerHTML = m ? laptopSVG(m.brand, p.accent, { small: true, sub: m.name }) : laptopSVG(p.laptop.title, p.accent, { small: true });
+  $('#share-model').textContent = m ? `${m.brand} ${m.name}` : p.laptop.title;
+  $('#share-chip').textContent = m ? `${poweredChip(m.cpu)}${m.sku ? ' · SKU ' + m.sku : ''}` : chipName(p);
+  $('#share-price').textContent = m && m.price ? `${m.price} · price seen online in 2026` : '';
+  return true;
 }
 
 /* ------------------------------------------------- sheets & overlays */
@@ -390,7 +411,103 @@ function start2D(reason) {
     return;
   }
   if (state.screen === 'game') race2d.restart();
+  else if (state.screen === 'attract') race2d.demo();
 }
+
+const makeGame = mod => mod.createGame({
+  root: $('#game-root'),
+  canvas: $('#game-canvas'),
+  onActivity: bumpActivity,
+  onFallback: RACE_MODE === '3d' ? null : (why) => start2D(why)
+});
+
+/* ------------------------------------------- attract mode (kiosk) */
+let attractTimer = 0, swallowClickUntil = 0;
+async function startAttract() {
+  if (state.screen !== 'landing') return;
+  state.screen = 'attract';
+  stopStars();
+  $$('.screen.active').forEach(s => s.classList.remove('active'));
+  $('#screen-game').classList.add('active');
+  document.body.classList.add('attract-on');
+  if (window.SFX) window.SFX.silent = true;
+  const names = DATA.tierOrder.flatMap(t => (DATA.processors[t].laptop.models || []).map(m => `${m.brand} ${m.name}`));
+  const uniq = [...new Set(names)];
+  let k = 0;
+  const rot = () => { const el = $('#attract-lap'); el.textContent = uniq[k++ % uniq.length] || ''; el.classList.remove('in'); void el.offsetWidth; el.classList.add('in'); };
+  rot(); clearInterval(attractTimer); attractTimer = setInterval(rot, 2800);
+  renderBoard($('#attract-lb'));
+  try {
+    if (!use2d && !game) { gameModulePromise ||= window.loadGameModule(); game = makeGame(await gameModulePromise); }
+  } catch { use2d = true; }
+  if (state.screen !== 'attract') return;
+  $('#game-canvas').hidden = use2d; $('#game-canvas-2d').hidden = !use2d;
+  if (use2d) start2D(); else game.demo();
+}
+function exitAttract() {
+  clearInterval(attractTimer);
+  race()?.stop();
+  document.body.classList.remove('attract-on');
+  if (window.SFX) window.SFX.silent = false;
+  state.screen = 'game';
+  show('landing');
+  lastActivity = performance.now();
+}
+['pointerdown', 'keydown'].forEach(ev => window.addEventListener(ev, e => {
+  if (state.screen !== 'attract') return;
+  e.preventDefault(); e.stopPropagation();
+  swallowClickUntil = performance.now() + 700; // the tap that wakes the kiosk must not also press ENTER
+  exitAttract();
+}, { capture: true }));
+window.addEventListener('click', e => { if (performance.now() < swallowClickUntil) { e.preventDefault(); e.stopPropagation(); } }, { capture: true });
+
+/* ------------------------------------------ daily leaderboard (local) */
+const lbKey = () => { const d = new Date(); return `lb-${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+function loadBoard() {
+  try {
+    const key = lbKey();
+    for (let i = localStorage.length - 1; i >= 0; i--) { const k = localStorage.key(i); if (k && k.startsWith('lb-') && k !== key) localStorage.removeItem(k); } // daily reset
+    const v = JSON.parse(localStorage.getItem(key) || '[]');
+    return Array.isArray(v) ? v : [];
+  } catch { return []; }
+}
+function saveBoard(list) { try { localStorage.setItem(lbKey(), JSON.stringify(list)); } catch {} }
+const fmtTime = t => `${t.toFixed(1)}s`;
+function renderBoard(el, mark) {
+  const top = loadBoard().sort((a, b) => a.t - b.t).slice(0, 5);
+  el.innerHTML = top.length ? `<li class="lb-head">TODAY'S TOP 5</li>` + top.map((r, i) => `<li class="${r === mark || (mark && r.id === mark.id) ? 'me' : ''}"><span>${i + 1}</span><b>${esc(r.n)}</b><em>${fmtTime(r.t)}</em></li>`).join('') : '';
+  el.hidden = !top.length;
+}
+document.addEventListener('race-finished', e => {
+  const t = e.detail.time, box = $('#res-lb');
+  const ini = ['A', 'A', 'A'];
+  box.innerHTML = `<div class="lb-entry"><span class="lb-time">YOUR TIME <b>${fmtTime(t)}</b></span>
+      <div class="lb-ini">${ini.map((c, i) => `<div class="ini" data-i="${i}"><button data-d="1" aria-label="Next letter">▲</button><b>${c}</b><button data-d="-1" aria-label="Previous letter">▼</button></div>`).join('')}</div>
+      <button class="hex-btn hex-sm lb-save">SAVE</button></div>
+    <ol class="lb-list" hidden></ol>`;
+  const paint = () => $$('.ini b', box).forEach((b, i) => b.textContent = ini[i]);
+  let cur = 0;
+  box.onclick = ev => {
+    const btn = ev.target.closest('button'); if (!btn) return;
+    if (btn.classList.contains('lb-save')) {
+      const rec = { id: Date.now(), n: ini.join(''), t: Math.round(t * 10) / 10 };
+      saveBoard([...loadBoard(), rec]);
+      $('.lb-entry', box).remove();
+      renderBoard($('.lb-list', box), rec);
+      window.SFX?.tick();
+      return;
+    }
+    const i = +btn.closest('.ini').dataset.i; cur = i;
+    ini[i] = String.fromCharCode(65 + (ini[i].charCodeAt(0) - 65 + +btn.dataset.d + 26) % 26); paint(); window.SFX?.tick();
+  };
+  // typed initials on a keyboard kiosk
+  box.onkeydown = null;
+  const onType = ev => {
+    if (!box.isConnected || !$('.lb-entry', box) || !$('#game-results').classList.contains('show')) { removeEventListener('keydown', onType); return; }
+    if (/^[a-z]$/i.test(ev.key)) { ini[cur] = ev.key.toUpperCase(); cur = Math.min(2, cur + 1); paint(); }
+  };
+  addEventListener('keydown', onType);
+});
 
 async function startGame() {
   show('game');
@@ -401,12 +518,7 @@ async function startGame() {
       loading.classList.add('show');
       gameModulePromise ||= window.loadGameModule();
       const mod = await gameModulePromise;
-      game = mod.createGame({
-        root: $('#game-root'),
-        canvas: $('#game-canvas'),
-        onActivity: bumpActivity,
-        onFallback: RACE_MODE === '3d' ? null : (why) => start2D(why)
-      });
+      game = makeGame(mod);
     }
     loading.classList.remove('show');
     $('#game-canvas').hidden = false;
@@ -451,8 +563,9 @@ function hideIdle() { idleShown = false; $('#idle-overlay').classList.remove('sh
 ['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(ev =>
   window.addEventListener(ev, bumpActivity, { passive: true, capture: true }));
 setInterval(() => {
-  if (state.screen === 'landing') { lastActivity = performance.now(); return; }
+  if (state.screen === 'share' || state.screen === 'attract') return;
   const idle = performance.now() - lastActivity;
+  if (state.screen === 'landing') { if (idle >= ATTRACT_AFTER_MS) startAttract(); return; }
   const limit = state.screen === 'end' ? IDLE_RESET_END_MS : IDLE_RESET_MS;
   if (idle >= limit) { resetAll(); return; }
   if (idle >= limit - IDLE_WARN_BEFORE_MS) {
@@ -528,10 +641,14 @@ function stopStars() {
 if (navigator.maxTouchPoints > 0 || matchMedia('(any-pointer: coarse)').matches) document.body.classList.add('touch');
 buildQuiz();
 drawPixelChip();
-startStars();
+const SHARE = new URLSearchParams(location.search);
+if (SHARE.get('result') && renderShare(SHARE.get('result'), SHARE.get('model'))) {
+  document.body.classList.add('share-view');
+  show('share');
+} else startStars();
 // Warm the 3D engine download in the background so the race starts fast.
 setTimeout(() => {
-  if (gameModulePromise || use2d) return;
+  if (gameModulePromise || use2d || state.screen === 'share') return;
   gameModulePromise = window.loadGameModule();
   gameModulePromise.catch(e => { gameModulePromise = null; console.warn('3D engine prefetch failed (will retry on play):', e); });
 }, 1200);

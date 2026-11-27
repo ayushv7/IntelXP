@@ -6,7 +6,16 @@
   <meta name="theme-color" content="#020814" />
   <meta name="description" content="1 Million Minds — an interactive AI PC retail experience: play, take the quiz, get your personalised Intel Core Ultra recommendation." />
   <title>AI PC Quest · 1 Million Minds</title>
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="AI PC Quest · Find your Intel AI laptop" />
+  <meta property="og:description" content="Race, play two quick AI minigames and get a personal Intel® Core™ Ultra laptop pick in 2 minutes. A 1 Million Minds retail kiosk." />
+  <meta property="og:image" content="https://ayushv7.github.io/IntelXP/assets/og-image.png" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" href="assets/chip-ultra7.svg" type="image/svg+xml" />
+  <link rel="icon" href="assets/favicon-32.png" sizes="32x32" type="image/png" />
+  <link rel="apple-touch-icon" href="assets/apple-touch-icon.png" />
   <link rel="preload" href="fonts/PressStart2P-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="fonts/Inter-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="css/fonts.css" />
@@ -158,6 +167,7 @@
               <figure><canvas id="res-after" width="320" height="180"></canvas><figcaption>AFTER · AI PC</figcaption></figure>
             </div>
             <ul class="ticks"><li>Higher frame rate</li><li>AI upscaling</li><li>Reduced lag</li></ul>
+            <div class="lb" id="res-lb"></div>
             <div class="btn-row">
               <button class="hex-btn hex-sm ghost" data-action="race-again">↻ AGAIN</button>
               <button class="hex-btn hex-md" data-action="finish-game">CONTINUE ▶</button>
@@ -247,13 +257,34 @@
         <div class="end-card">
           <div class="end-art" id="end-art"></div>
           <div><p class="end-ask" id="end-ask"></p><p class="end-sku" id="end-sku"></p><p class="end-price" id="end-price"></p></div>
+          <figure class="end-qr"><div id="end-qr"></div><figcaption>Scan to keep it</figcaption></figure>
         </div>
         <p class="end-cta">Show this screen to a store associate.</p>
         <button class="hex-btn hex-lg" data-action="restart">↻ RESTART</button>
       </div>
     </section>
 
+    <!-- Phone card opened from the end-screen QR (?result=<tier>&model=<sku>) -->
+    <section class="screen modern" id="screen-share" data-screen="share">
+      <div class="modern-inner share-inner">
+        <p class="kicker">MY AI PC PICK</p>
+        <div class="share-art" id="share-art"></div>
+        <h1 class="m-h1 share-model" id="share-model"></h1>
+        <p class="share-chip" id="share-chip"></p>
+        <p class="share-price" id="share-price"></p>
+        <p class="share-cta">Show this in store</p>
+      </div>
+    </section>
+
   </main>
+
+  <!-- Attract mode: silent AI demo race behind the landing after 30 s idle -->
+  <div class="attract" id="attract" aria-hidden="true">
+    <p class="attract-title">AI PC QUEST</p>
+    <p class="attract-lap" id="attract-lap"></p>
+    <p class="attract-cta">TOUCH TO PLAY</p>
+    <ol class="lb-list attract-lb" id="attract-lb"></ol>
+  </div>
 
   <!-- Tech specs bottom sheet -->
   <div class="sheet-backdrop" id="specs-sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
@@ -292,6 +323,7 @@
   <script src="js/sfx.js"></script>
   <script src="js/minis.js"></script>
   <script src="js/race2d.js"></script>
+  <script src="js/vendor/qrcode/qrcode.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>

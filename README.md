@@ -34,6 +34,11 @@ All paths are relative, so the site works from a sub-path. `.nojekyll` is includ
 - Use the fullscreen button in the top-right corner, or launch Chrome in kiosk mode:
   `google-chrome --kiosk --autoplay-policy=no-user-gesture-required https://<you>.github.io/<repo>/`
 - After 60 s with no input the experience resets to the landing screen. A "Still there?" warning appears at 50 s.
+- After 30 s idle on the landing screen, attract mode plays a silent AI-driven demo race (all upgrades on) with rotating laptop names and today's top 5. Any touch or key returns to the landing screen.
+- Leaderboard: after a race, players enter 3 initials. Today's top 5 times are kept in `localStorage` and reset daily.
+- Sound is muted by default; use the speaker button in the top-right corner. On phones, crashes and coins vibrate.
+- The end screen shows a QR code to `?result=<tier>&model=<sku>`, which opens a phone card ("Show this in store").
+- `og:image` points at `https://ayushv7.github.io/IntelXP/assets/og-image.png`; change it if you deploy elsewhere.
 - Works fully offline once served: no CDN or Google Fonts calls. If WebGL is unavailable, the race shows a fallback and the journey continues.
 
 ## Editing product data: `js/processors.js`
@@ -95,5 +100,6 @@ js/game.js          Three.js racing game + HUD
 assets/*.svg        generic processor chip illustrations (no third-party logos)
 js/minis.js         Work / Learning 2D minigames
 js/vendor/three/    Three.js r160 (MIT): only the files the game imports
+js/vendor/qrcode/   qrcode-generator 1.4.4 (MIT, Kazuhiko Arase)
 fonts/, css/fonts.css  Inter, Space Grotesk, Press Start 2P (OFL 1.1), latin woff2
 ```

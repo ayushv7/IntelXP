@@ -60,6 +60,8 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
   let wasBoost = false;
   const boostHint = window.createBoostHint ? window.createBoostHint(root) : null;
   let traffic = [], obstacles = [], coins = [], ups = [], parts = [];
+  let demoMode = false, aiLane = LANES[1];
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
   const portrait = matchMedia('(orientation: portrait)');
   const inStutter = () => stage < 4 && P.s > CONG_START && P.s < CONG_END;
 
@@ -251,7 +253,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
     const W = canvas.width, H = canvas.height;
     camZ = P.s - CAM_BACK; sc0 = P.s; camX = P.d * UPM * .85;
     g.save();
-    if (shake > 0) g.translate(rand(-1, 1) * shake * 3, rand(-1, 1) * shake * 3);
+    if (shake > 0 && !reduceMotion.matches) g.translate(rand(-1, 1) * shake * 3, rand(-1, 1) * shake * 3);
     drawSky(W, H); drawRoad(W, H); drawSprites(W, H, t); drawPlayer(W, H); drawParts(dt);
     g.restore();
   }
@@ -350,13 +352,17 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
     }
     if (!zoneShown && stage < 4 && P.s > CONG_START - 10) { zoneShown = true; mini('⚠ CONGESTED ZONE<br>BACKGROUND TASKS ARE CAUSING LAG', 2600); }
     if (racing && P.s >= TRACK_LEN) { phase = 'finishing'; finishAt = performance.now(); window.SFX?.finish(); }
-    if (phase === 'finishing' && (P.v < 1 || performance.now() - finishAt > 2600)) { phase = 'done'; wantAfterShot = true; }
+    if (phase === 'finishing' && (P.v < 1 || performance.now() - finishAt > 2600)) {
+      if (demoMode) { demo(); return; }
+      phase = 'done'; wantAfterShot = true;
+      document.dispatchEvent(new CustomEvent('race-finished', { detail: { time: P.time } }));
+    }
   }
 
   function tick(now) {
     raf = requestAnimationFrame(tick);
     const realDt = Math.min(.25, (now - lastT) / 1000 || 0); lastT = now;
-    if (document.body.classList.contains('touch') && portrait.matches) return; // paused behind "rotate" overlay
+    if (!demoMode && document.body.classList.contains('touch') && portrait.matches) return; // paused behind "rotate" overlay
     pending = Math.min(.25, pending + realDt);
     if (phase === 'tutorial') {
       const el = now - tutorialStart;
@@ -373,7 +379,8 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
       }
     }
     const dt = pending; pending = 0;
-    if (phase === 'race' && Object.values(keys).some(Boolean)) onActivity();
+    if (demoMode && phase === 'race') autopilot();
+    else if (phase === 'race' && Object.values(keys).some(Boolean)) onActivity();
     let rem = now < slowUntil ? dt * .25 : dt;
     while (rem > 1e-6) { const h = Math.min(rem, 1 / 120); step(h); rem -= h; }
     render(now / 1000, dt);
@@ -386,7 +393,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
     setText(hud.fpsMode, phase === 'race' && (stage === 1 || inStutter()) ? 'SIMULATED' : 'REAL');
     drawMinimap(now / 1000);
     if (window.SFX) { SFX.engine(Math.abs(P.v) / V_BOOST, P.boosting, phase !== 'idle' && phase !== 'done'); if (P.boosting && !wasBoost) SFX.boost(); wasBoost = P.boosting; }
-    boostHint?.update(now, { racing: phase === 'race', boosting: P.boosting, boostReady: P.boost >= 50, straight: Math.abs(slope(P.s + 60) - slope(P.s)) < .03 });
+    boostHint?.update(now, { racing: phase === 'race' && !demoMode, boosting: P.boosting, boostReady: P.boost >= 50, straight: Math.abs(slope(P.s + 60) - slope(P.s)) < .03 });
   }
 
   /* ---------------- input */
@@ -402,7 +409,31 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
   new ResizeObserver(() => { if (running) sizeCanvas(); }).observe(root);
 
   /* ---------------- API */
+  function autopilot() {
+    const look = 40 + P.v * 1.1;
+    const clearOf = ld => {
+      let c = look;
+      for (const t of traffic) if (Math.abs(t.d - ld) < 2.8 && t.s > P.s - 4) c = Math.min(c, t.s - 3 - P.s);
+      for (const o of obstacles) if (!o.hit && Math.abs(o.d - ld) < 3.5 && o.s > P.s - 3) c = Math.min(c, o.s - P.s);
+      return c;
+    };
+    let best = aiLane, bestC = clearOf(aiLane); const cur = bestC;
+    for (const ld of LANES) { const c = clearOf(ld) - Math.abs(ld - P.d) * .8; if (c > bestC + 6) { best = ld; bestC = c; } }
+    aiLane = best;
+    const err = aiLane - P.d;
+    keys.left = err < -.5; keys.right = err > .5; keys.gas = true;
+    keys.brake = cur < 14 && Math.abs(err) > 1 && P.v > 22;
+    keys.boost = P.boost > 30 && cur >= look - 1 && Math.abs(err) < 1;
+  }
+  function demo() {
+    restart(); demoMode = true; aiLane = P.d;
+    hud.tutorial.classList.remove('show'); phase = 'race';
+    ups.forEach(u => { u.taken = true; }); P.ups = 3; P.v = 30; stage = 4;
+    slots.forEach(x => x.classList.add('on')); cps.forEach(c => c.classList.add('got'));
+    setText(hud.system, UPGRADES[2].system); hud.system?.classList.add('ai'); sizeCanvas();
+  }
   function restart() {
+    demoMode = false;
     ['results', 'toast', 'zoneToast'].forEach(k => hud[k]?.classList.remove('show'));
     hud.wipe?.classList.remove('run');
     Object.keys(keys).forEach(k => keys[k] = false);
@@ -414,12 +445,12 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
     cancelAnimationFrame(raf); raf = requestAnimationFrame(tick);
   }
   function stop() {
-    running = false; phase = 'idle'; cancelAnimationFrame(raf); raf = 0; window.SFX?.stopLoops(); boostHint?.reset();
+    running = false; phase = 'idle'; demoMode = false; cancelAnimationFrame(raf); raf = 0; window.SFX?.stopLoops(); boostHint?.reset();
     Object.keys(keys).forEach(k => keys[k] = false);
     ['tutorial', 'results', 'toast', 'zoneToast'].forEach(k => hud[k]?.classList.remove('show'));
   }
   const api = {
-    restart, stop, mode: '2d',
+    restart, stop, demo, mode: '2d',
     get debug() { return { P, stage, phase, quality: 0, fps: fpsShown, upgrades: P.ups, keys: { ...keys }, mode: '2d' }; },
     _jump(s) { P.s = s; nextTrafficS = Math.max(nextTrafficS, s + 60); },
     _cars() { return traffic.map(c => ({ s: c.s, d: c.d })); },
