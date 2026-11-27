@@ -20,6 +20,7 @@
   <link rel="preload" href="fonts/Inter-latin.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="css/fonts.css" />
   <link rel="stylesheet" href="css/styles.css" />
+  <link rel="stylesheet" href="css/minigames.css" />
   <script type="importmap">
     {
       "imports": {
@@ -74,7 +75,7 @@
               <svg viewBox="0 0 64 64"><rect x="8" y="20" width="48" height="32" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><path d="M24 20v-6h16v6M8 34h48" fill="none" stroke="currentColor" stroke-width="3"/></svg>
             </span>
             <span class="mission-name">WORK</span>
-            <span class="mission-tag">SOON</span>
+            <span class="mission-tag play">PLAY</span>
             <span class="done-badge">✔ DONE</span>
           </button>
           <button class="hex-card mission bounce b3" data-action="play-learning">
@@ -82,7 +83,7 @@
               <svg viewBox="0 0 64 64"><path d="M4 24 32 12l28 12-28 12z" fill="none" stroke="currentColor" stroke-width="3"/><path d="M16 30v12c0 4 8 8 16 8s16-4 16-8V30M60 24v14" fill="none" stroke="currentColor" stroke-width="3"/></svg>
             </span>
             <span class="mission-name">LEARNING</span>
-            <span class="mission-tag">SOON</span>
+            <span class="mission-tag play">PLAY</span>
             <span class="done-badge">✔ DONE</span>
           </button>
         </div>
@@ -187,7 +188,7 @@
       </div>
     </section>
 
-    <!-- 4. PLACEHOLDERS =================================================== -->
+    <!-- 4. MINIGAMES (Work, Learning) ==================================  -->
     <section class="screen pixel mini-screen" id="screen-work" data-screen="work"></section>
     <section class="screen pixel mini-screen" id="screen-learning" data-screen="learning"></section>
 
@@ -321,6 +322,8 @@
   <script src="js/game.js"></script>
   <script src="js/sfx.js"></script>
   <script src="js/minis.js"></script>
+  <script src="js/mini-study.js"></script>
+  <script src="js/mini-work.js"></script>
   <script src="js/race2d.js"></script>
   <script src="js/vendor/qrcode/qrcode.js"></script>
   <script src="js/app.js"></script>

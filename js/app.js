@@ -54,7 +54,7 @@ const actions = {
   'play-work': () => { show('work'); window.Minis.start('work', $('#screen-work')); },
   'play-learning': () => { show('learning'); window.Minis.start('learning', $('#screen-learning')); },
   'exit-mini': () => { window.Minis.stop(); show('select'); },
-  'finish-placeholder': () => {
+  'finish-mini': () => {
     window.Minis.stop();
     markComplete(state.screen === 'work' ? 'work' : 'learning');
     show('select');
@@ -282,23 +282,56 @@ function renderLaptops() {
   const allThisChip = ms.length && ms.every(m => cpuShort(m.cpu).endsWith(' ' + chipModel));
   // accuracy: only say "this processor" when every listed laptop really has it
   $('#lap-title').textContent = allThisChip ? 'Laptops with this processor' : 'Recommended laptops';
-  const card = (m, i) => {
-    const hero = i === 0 && m.hero !== false;
+  // the selected laptop sits in the hero slot; the ribbon stays on the original top pick
+  const order = state.model ? [state.model, ...ms.filter(m => m !== state.model)] : ms;
+  const card = (m, pos) => {
+    const hero = pos === 0, top = m === ms[0] && m.hero !== false;
     const meta = [m.memory, m.price && `from ${m.price}`].filter(Boolean).join(' · ');
-    return `<button class="lap-card ${hero ? 'hero' : ''}" data-i="${i}" aria-pressed="${m === state.model}" style="--accent:${esc(p.accent)}">
-      ${hero ? `<span class="ribbon">MOST RECOMMENDED</span><div class="lap-card-art">${laptopSVG(m.brand, p.accent, { sub: m.name })}</div>` : ''}
+    return `<button class="lap-card ${hero ? 'hero' : ''}" data-k="${ms.indexOf(m)}" aria-pressed="${m === state.model}" style="--accent:${esc(p.accent)}">
+      ${top ? '<span class="ribbon">MOST RECOMMENDED</span>' : ''}
+      ${hero ? `<div class="lap-card-art">${laptopSVG(m.brand, p.accent, { sub: m.name })}</div>` : ''}
       <b class="lc-name">${esc(m.brand)} ${esc(m.name)}</b>
       <span class="lc-chip">${esc(poweredChip(m.cpu))}</span>
       ${meta ? `<span class="lc-meta">${esc(meta)}</span>` : ''}
       ${hero ? '<span class="batt-badge">All-day battery</span>' : ''}
     </button>`;
   };
-  $('#lap-cards').innerHTML = `<div class="lap-hero-col">${ms[0] ? card(ms[0], 0) : ''}</div><div class="lap-side-col">${ms.slice(1).map((m, i) => card(m, i + 1)).join('')}</div>`;
-  $('#lap-cards').onclick = e => {
-    const c = e.target.closest('.lap-card'); if (!c) return;
-    state.model = ms[+c.dataset.i]; window.SFX?.tick();
-    $$('#lap-cards .lap-card').forEach(x => x.setAttribute('aria-pressed', String(x === c)));
+  const box = $('#lap-cards');
+  box.innerHTML = `<div class="lap-hero-col">${order[0] ? card(order[0], 0) : ''}</div><div class="lap-side-col">${order.slice(1).map((m, i) => card(m, i + 1)).join('')}</div>`;
+  box.onclick = e => {
+    const c = e.target.closest('.lap-card'); if (!c || swapping) return;
+    const m = ms[+c.dataset.k]; if (!m || m === state.model) return;
+    window.SFX?.tick(); swapTo(m);
   };
+}
+/** FLIP: the tapped card flies into the hero slot while the hero shrinks into its place. */
+let swapping = false;
+function swapTo(m) {
+  const box = $('#lap-cards');
+  if (!box.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) { // crossfade instead
+    swapping = true;
+    if (box.animate) box.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160 });
+    setTimeout(() => {
+      state.model = m; renderLaptops();
+      if (box.animate) box.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220 });
+      swapping = false;
+    }, box.animate ? 160 : 0);
+    return;
+  }
+  const first = {};
+  $$('.lap-card', box).forEach(c => { first[c.dataset.k] = c.getBoundingClientRect(); });
+  state.model = m; renderLaptops();
+  swapping = true;
+  const D = 450, E = 'cubic-bezier(.16, 1, .3, 1)';
+  $$('.lap-card', box).forEach(c => {
+    const a = first[c.dataset.k], b = c.getBoundingClientRect(); if (!a) return;
+    c.animate([
+      { transformOrigin: '0 0', transform: `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${a.width / b.width}, ${a.height / b.height})` },
+      { transformOrigin: '0 0', transform: 'none' }
+    ], { duration: D, easing: E });
+    $$('.lap-card-art, .batt-badge', c).forEach(x => x.animate([{ opacity: 0 }, { opacity: 0, offset: .35 }, { opacity: 1 }], { duration: D, easing: 'ease-out' }));
+  });
+  setTimeout(() => { swapping = false; }, D);
 }
 
 function renderComparison() {

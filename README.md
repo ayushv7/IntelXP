@@ -98,7 +98,10 @@ js/processors.js    editable product data (only file most people need to touch)
 js/app.js           navigation, quiz, recommendation, comparison, idle reset, fullscreen
 js/game.js          Three.js racing game + HUD
 assets/*.svg        generic processor chip illustrations (no third-party logos)
-js/minis.js         Work / Learning 2D minigames
+js/minis.js         shared minigame kit (HUD, dialogs, unlock toast, end page)
+js/mini-study.js    Learning: Study minigame (all text in its TEXT object)
+js/mini-work.js     Work: metro inbox minigame (all text in its TEXT object)
+css/minigames.css   minigame styles
 js/vendor/three/    Three.js r160 (MIT): only the files the game imports
 js/vendor/qrcode/   qrcode-generator 1.4.4 (MIT, Kazuhiko Arase)
 fonts/, css/fonts.css  Inter, Space Grotesk, Press Start 2P (OFL 1.1), latin woff2

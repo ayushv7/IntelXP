@@ -48,8 +48,8 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
   }
   const D = window.PROCESSOR_DATA, heroes = D ? D.tierOrder.map(t => { const ms = D.processors[t].laptop?.models || []; return ms.find(m => m.hero) || ms[0]; }).filter(Boolean) : [];
   (heroes.length ? heroes.map(h => `${h.brand} ${h.name}`) : ['AI PC']).concat(heroes.length ? [`${heroes[0].brand} ${heroes[0].name}`] : [])
-    .forEach((t, i) => scenery.push({ s: 260 + i * 820, d: (i % 2 ? 1 : -1) * 15, kind: 'board', text: t, color: i % 2 ? '#ffffff' : '#ff2bd6' }));
-  const gates = [[0, 'START', '#1f6bff'], [CONG_START, 'TRAFFIC AHEAD', '#ff8a3d'], [TRACK_LEN, 'FINISH', '#ff2bd6']];
+    .forEach((t, i) => scenery.push({ s: 260 + i * 820, d: (i % 2 ? 1 : -1) * 15, kind: 'board', text: t, color: i % 2 ? '#ffffff' : '#ffd25e' }));
+  const gates = [[0, 'START', '#1f6bff'], [CONG_START, 'TRAFFIC AHEAD', '#ff8a3d'], [TRACK_LEN, 'FINISH', '#ffc53d']];
 
   /* ---------------- state */
   const P = {};
@@ -189,9 +189,9 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
   function drawCoin(p, big, t) {
     const m = p.m, r = m * (big ? 1.35 : .62), y = p.y - m * (big ? 2.2 + Math.sin(t * 2.4) * .25 : 1.1), sq = Math.abs(Math.cos(t * 3 + p.x * .01));
     if (big) { g.fillStyle = 'rgba(92,200,255,.22)'; g.fillRect(p.x - r * .8, 0, r * 1.6, y); }
-    if (!hi()) { g.fillStyle = big ? '#1f6bff' : '#ff2bd6'; g.fillRect(p.x - r * sq, y - r, r * 2 * sq + 1, r * 2); return; }
-    g.fillStyle = big ? '#1f6bff' : '#ff2bd6'; g.beginPath(); g.ellipse(p.x, y, Math.max(1, r * sq), r, 0, 0, Math.PI * 2); g.fill();
-    g.strokeStyle = big ? '#ff2bd6' : '#141a2e'; g.lineWidth = Math.max(1, r * .14); g.stroke();
+    if (!hi()) { g.fillStyle = big ? '#1f6bff' : '#ffc845'; g.fillRect(p.x - r * sq, y - r, r * 2 * sq + 1, r * 2); return; }
+    g.fillStyle = big ? '#1f6bff' : '#ffc53d'; g.beginPath(); g.ellipse(p.x, y, Math.max(1, r * sq), r, 0, 0, Math.PI * 2); g.fill();
+    g.strokeStyle = big ? '#ffd25e' : '#141a2e'; g.lineWidth = Math.max(1, r * .14); g.stroke();
     if (big && sq > .5) { g.fillStyle = '#fff'; g.font = `bold ${Math.max(6, r * .9)}px Arial`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('AI', p.x, y + 1); }
   }
   function drawSprites(W, H, t) {
@@ -239,7 +239,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
     drawCar(0, 0, p.m * 1.05, hi() ? '#1a6bff' : '#2f5fe0', stage >= 4 ? '#ff2b4a' : '#aa2222', true);
     g.restore();
     if (P.hitCd > 0 && Math.floor(P.hitCd * 12) % 2) { g.fillStyle = 'rgba(255,255,255,.35)'; g.fillRect(p.x - p.m * 1.2, p.y - p.m * 1.8, p.m * 2.4, p.m * 1.8); }
-    if ((stage >= 4 || P.boosting) && Math.random() < .8) parts.push({ x: p.x + rand(-1, 1) * p.m * .5, y: p.y - p.m * .3, vx: rand(-20, 20), vy: rand(10, 40), life: .5, col: P.boosting ? '#d58bff' : pick(['#5cd0ff', '#ff2bd6']) });
+    if ((stage >= 4 || P.boosting) && Math.random() < .8) parts.push({ x: p.x + rand(-1, 1) * p.m * .5, y: p.y - p.m * .3, vx: rand(-20, 20), vy: rand(10, 40), life: .5, col: P.boosting ? '#d58bff' : pick(['#5cd0ff', '#ffd25e']) });
   }
   function drawParts(dt) {
     for (const q of parts) { q.life -= dt; q.x += q.vx * dt; q.y += q.vy * dt; }
@@ -290,7 +290,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
     slots[i]?.classList.add('on'); retrigger(slots[i], 'pop'); cps[i]?.classList.add('got');
     setText(hud.system, UPGRADES[i].system); if (i === 2) hud.system.classList.add('ai');
     slowUntil = performance.now() + 400; retrigger(hud.flash, 'go'); toast(i);
-    const p = proj(u.s, u.d); if (p) burstAt(p.x, p.y - p.m * 2, 40, ['#5cd0ff', '#ff2bd6', '#ffffff']);
+    const p = proj(u.s, u.d); if (p) burstAt(p.x, p.y - p.m * 2, 40, ['#5cd0ff', '#ffd25e', '#ffffff']);
     if (i === 1 && hud.wipe) { // pixelated -> sharp wipe
       hud.wipe.width = canvas.width; hud.wipe.height = canvas.height; hud.wipe.getContext('2d').drawImage(canvas, 0, 0); retrigger(hud.wipe, 'run');
     }
@@ -342,7 +342,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
       if (P.hitCd <= 0 && Math.abs(o.s - P.s) < 2.8 && Math.abs(o.d - P.d) < 2.65) { o.hit = true; hit(o.d); }
     }
     for (const c of coins) if (!c.taken && Math.abs(c.s - P.s) < 2.6 && Math.abs(c.d - P.d) < 1.9) {
-      c.taken = true; window.SFX?.coin(); P.boost = Math.min(100, P.boost + 12); const p = proj(c.s, c.d); if (p) burstAt(p.x, p.y - p.m, 8, ['#ff2bd6', '#fff']);
+      c.taken = true; window.SFX?.coin(); P.boost = Math.min(100, P.boost + 12); const p = proj(c.s, c.d); if (p) burstAt(p.x, p.y - p.m, 8, ['#ffd25e', '#fff']);
     }
     const u = ups[P.ups];
     if (u && !u.taken) {
