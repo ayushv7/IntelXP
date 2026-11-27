@@ -227,11 +227,12 @@ function recommendWithBudget(picks, budget, data = window.BUDGET_DATA) {
   const ideal = chips.find(c => c.idealFor === idealTier);
   const byTierDesc = chips.slice().sort((a, b) => b.performanceTier - a.performanceTier);
   const cheapest = chips.reduce((a, b) => (b.minLaptopPrice < a.minLaptopPrice ? b : a));
-  // best chip that fits, never "better" than the ideal match
-  const fitting = byTierDesc.filter(c => c.minLaptopPrice <= budget && c.performanceTier <= ideal.performanceTier);
-  const withinBudget = budget >= ideal.minLaptopPrice;
-  const chip = withinBudget ? ideal : (fitting[0] || cheapest);
-  const tradeOffNote = withinBudget ? '' : fitting.length
+  const fitting = byTierDesc.filter(c => c.minLaptopPrice <= budget); // best chip that fits, no cap
+  const idealFits = budget >= ideal.minLaptopPrice;
+  const chip = idealFits ? ideal : (fitting[0] || cheapest);
+  const stepUp = !idealFits && chip.performanceTier > ideal.performanceTier && chip.minLaptopPrice <= budget;
+  const withinBudget = idealFits || stepUp;
+  const tradeOffNote = idealFits ? '' : stepUp ? 'Great news: your budget gets you a step up.' : fitting.length
     ? `Your ideal match is the ${ideal.name}. It starts at about ${inr(ideal.minLaptopPrice)}. This is the best Intel AI laptop chip in your budget.${chip.note ? ' ' + chip.note + '.' : ''}`
     : `Intel AI laptops start at about ${inr(cheapest.minLaptopPrice)}.`;
   const wanted = new Set(picks.flatMap(p => PICK_TAGS[p] || []));
@@ -309,33 +310,46 @@ function laptopSVG(title, accent, { small = false, sub = '' } = {}) {
 
 /* ---- chip screen: the processor is the hero */
 const AI_FEATS = [
-  { ids: ['studying'], icon: 'globe', text: 'Live Captions translate 40+ languages to English' },
-  { ids: ['work'], icon: 'cam', text: 'Windows Studio Effects: blur, eye contact, voice focus' },
-  { ids: ['creation'], icon: 'brush', text: 'Cocreator in Paint + AI photo edits, on-device' },
-  { ids: ['browsing', 'entertainment'], icon: 'cursor', text: 'Click to Do: act on anything on screen' },
-  { ids: ['gaming'], icon: 'game', text: 'Intel XeSS AI upscaling + frame generation' }
+  { ids: ['studying'], icon: 'globe', text: 'Live Captions translate 40+ languages to English', copilot: true },
+  { ids: ['work'], icon: 'cam', text: 'Windows Studio Effects: blur, eye contact, voice focus', copilot: true },
+  { ids: ['creation'], icon: 'brush', text: 'Cocreator in Paint + AI photo edits, on-device', copilot: true },
+  { ids: ['browsing', 'entertainment'], icon: 'cursor', text: 'Click to Do: act on anything on screen', copilot: true },
+  { ids: ['gaming'], icon: 'game', text: 'Intel XeSS AI upscaling + frame generation', copilot: false }
 ];
+/** Display data for the current result's chip: its own processors.js entry (chipEntries, or the tier
+    whose model matches), plus its comparison. Falls back to the quiz tier when there is no result. */
+function curChip() {
+  const key = state.result?.chip.key;
+  const byKey = key && (DATA.chipEntries?.[key] || Object.values(DATA.processors).find(t => String(t.model) === key));
+  const tierKey = byKey && Object.keys(DATA.processors).find(k => DATA.processors[k] === byKey);
+  const p = byKey || DATA.processors[state.tier];
+  return { p, cmp: DATA.comparisons[key] || DATA.comparisons[tierKey || state.tier] };
+}
 function specValue(p, re) { return (p.specs.find(x => re.test(x.label)) || {}).value || ''; }
 function renderRecommendation() {
-  const p = DATA.processors[state.tier], r = state.result, c = r?.chip;
-  const exact = !c || String(p.model) === c.key; // processors.js has full specs for this exact chip
-  const ultra = (String(c?.name).match(/Ultra X?(\d)/) || [])[1];
-  $('#rec-chip-img').src = exact ? p.image : `assets/chip-ultra${ultra === '9' ? 9 : ultra === '5' ? 5 : 7}.svg`;
-  $('#rec-name').textContent = exact ? chipName(p) : c.name;
-  $('#rec-chip-img').alt = `${$('#rec-name').textContent} illustration`;
+  const { p } = curChip(), r = state.result, c = r?.chip;
+  const series3 = p.series3 !== false;                 // the battery claim is for Core Ultra Series 3 only
+  const copilot = c ? !!c.copilotPlus : true;
+  $('#rec-chip-img').src = p.image;
+  $('#rec-name').textContent = chipName(p);
+  $('#rec-chip-img').alt = `${chipName(p)} illustration`;
   $('.chip-halo').style.setProperty('--chip-accent', p.accent);
-  $('#rec-tagline').textContent = exact || c.idealFor ? p.tagline : (r.withinBudget ? c.note || '' : ''); // the trade-off line already carries the note
-  $('#rec-tradeoff').hidden = !(r && !r.withinBudget);
-  $('#rec-tradeoff').textContent = r && !r.withinBudget ? r.tradeOffNote : '';
-  // specs, battery claim, Copilot+ features and the comparison only where they are true for this chip
-  $('#rec-tiles').hidden = $('#rec-batt-note').hidden = !exact;
-  $('.specs-link').hidden = $('[data-action="compare"]').hidden = !exact;
-  const tiles = [['CPU cores', specValue(p, /cores/i)], ['Max turbo', specValue(p, /turbo/i)], ['AI engine (NPU)', specValue(p, /NPU/i)], ['Battery', '27 hrs*', 'up to ']].filter(([, v]) => v);
+  $('#rec-tagline').textContent = p.tagline;            // from the returned chip, never the quiz tier
+  $('#rec-tradeoff').hidden = !(r && r.tradeOffNote);
+  $('#rec-tradeoff').textContent = r ? r.tradeOffNote : '';
+  $('#rec-batt-note').hidden = !series3;
+  $('#rec-tiles').hidden = false;
+  $('.specs-link').hidden = $('[data-action="compare"]').hidden = false;
+  const stats = p.stats ? p.stats.map(([v, l]) => [l, v]) : [['CPU cores', specValue(p, /cores/i)], ['Max turbo', specValue(p, /turbo/i)], ['AI engine (NPU)', specValue(p, /NPU/i)]];
+  const tiles = stats.concat(series3 ? [['Battery', '27 hrs*', 'up to ']] : []).filter(([, v]) => v);
   $('#rec-tiles').innerHTML = tiles.map(([l, v, pre]) => `<div class="tile stat-tile" style="--accent:${esc(p.accent)}"><b>${pre ? `<small>${esc(pre)}</small>` : ''}${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
   // "What AI does for you": max 3, from the shopper's picks (order of the list below)
-  const feats = AI_FEATS.filter(f => f.ids.some(id => state.answers.has(id))).slice(0, 3);
+  const feats = AI_FEATS.filter(f => f.ids.some(id => state.answers.has(id)))
+    .map(f => f.ids.includes('gaming') && !p.arcB390 ? { ...f, text: 'Smooth everyday gaming with Intel graphics', copilot: false } : f)
+    .filter(f => !f.copilot || copilot).slice(0, 3);
   $('#rec-ai').innerHTML = feats.map(f => `<li class="tile" style="--accent:${esc(p.accent)}">${lineIcon(f.icon)}<span>${esc(f.text)}</span></li>`).join('');
-  $('.ai-for-you').hidden = !feats.length || (c && !c.copilotPlus);
+  $('.ai-for-you').hidden = !feats.length;
+  $('.ai-for-you .fine').hidden = !feats.some(f => f.copilot);
   // tech-specs sheet content
   $('#sheet-title').textContent = `${chipName(p)} · tech specs`;
   $('#sheet-specs').innerHTML = p.specs.map(s => `<div><span>${esc(s.label)}</span><b>${esc(s.value)}</b></div>`).join('');
@@ -349,7 +363,7 @@ const laptopsFor = p => state.result?.laptops || modelsOf(p);
 const modelsOf = p => { const ms = (p.laptop.models || []).slice(); const h = heroOf(p.laptop); return h ? [h, ...ms.filter(m => m !== h)].slice(0, 3) : ms.slice(0, 3); };
 const cpuShort = cpu => String(cpu || '').replace(/\s*\(.*\)\s*$/, '');
 function renderLaptops() {
-  const p = DATA.processors[state.tier], ms = laptopsFor(p);
+  const { p } = curChip(), ms = laptopsFor(p);
   if (!ms.includes(state.model)) state.model = ms[0] || null;
   const chipModel = String(state.result?.chip.key || p.model || '');
   const allThisChip = ms.length && ms.every(m => cpuShort(m.cpu).endsWith(' ' + chipModel));
@@ -409,8 +423,7 @@ function swapTo(m) {
 }
 
 function renderComparison() {
-  const p = DATA.processors[state.tier];
-  const c = DATA.comparisons[state.tier];
+  const { p, cmp: c } = curChip();
   const picks = [...state.answers];
   const article = /^[aeiou]|^(AMD|HP|LG|MSI)\b/i.test(c.competitorName) ? 'an' : 'a';
   $('#cmp-title').innerHTML = `${esc(chipName(p))} <span class="vs">vs</span> ${esc(c.competitorName)}`; // chip vs chip
@@ -448,7 +461,7 @@ function renderComparison() {
 }
 
 function renderEnd() {
-  const p = DATA.processors[state.tier];
+  const { p } = curChip();
   const m = state.model || laptopsFor(p)[0];
   $('#end-art').innerHTML = m ? laptopSVG(m.brand, p.accent, { small: true, sub: m.name }) : laptopSVG(p.laptop.title, p.accent, { small: true });
   $('#end-ask').innerHTML = m ? `Ask for the <b>${esc(m.brand)} ${esc(m.name)}</b>` : `Ask for the <b>${esc(p.laptop.title)}</b>`;

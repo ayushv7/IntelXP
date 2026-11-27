@@ -133,7 +133,7 @@ window.PROCESSOR_DATA = {
       family: 'Intel® Core™ Ultra 7',
       name: 'Intel® Core™ Ultra 7 processor',
       model: '356H',
-      tagline: 'A powerful AI laptop for creators',
+      tagline: 'A powerful 16-core AI laptop for big workloads',
       image: 'assets/chip-ultra7.svg',
       accent: '#00c7fd',
       placeholder: false,
@@ -171,7 +171,7 @@ window.PROCESSOR_DATA = {
       id: 'gaming',
       family: 'Intel® Core™ Ultra X9',
       name: 'Intel® Core™ Ultra X9 processor',
-      model: '388H',
+      model: '388H', arcB390: true,
       tagline: 'A thin AI laptop that games like a gaming laptop',
       image: 'assets/chip-ultra9.svg',
       accent: '#ffc845',
@@ -207,11 +207,75 @@ window.PROCESSOR_DATA = {
     }
   },
 
+  /* Chips the budget logic (laptops.js) can return that are not a quiz tier's own chip.
+     Same shape as a tier. `stats` = the chip-screen tiles (value, label), in order.
+     The chip screen always renders from the returned chip's entry (tier entries are
+     matched by `model`). arcB390 = has Arc B390 graphics (XeSS frame generation). */
+  chipEntries: {
+    '358H': {
+      id: '358H', family: 'Intel® Core™ Ultra X7', name: 'Intel® Core™ Ultra X7 processor', model: '358H',
+      tagline: 'A thin AI laptop built for gaming', image: 'assets/chip-ultra7.svg', accent: '#ffc845', arcB390: true, series3: true,
+      stats: [['12 Xe3', 'Arc B390 GPU cores'], ['16', 'CPU cores'], ['4.8 GHz', 'Max turbo'], ['50 TOPS', 'AI engine (NPU)']],
+      laptop: { alsoIn: '' },
+      specs: [
+        { key: true, label: 'Graphics',        value: 'Intel Arc B390, 12 Xe3 cores' },
+        { key: true, label: 'CPU cores',       value: '16' },
+        { key: true, label: 'Max turbo',       value: '4.8 GHz' },
+        { key: true, label: 'AI engine (NPU)', value: '50 TOPS' },
+        { label: 'Base power',                 value: '25 W' },
+        { label: 'Generation',                 value: 'Core Ultra Series 3' }
+      ],
+      roles: {
+        cpu: 'Fast cores for game logic and streaming.',
+        gpu: 'Arc B390 renders games and runs XeSS AI upscaling and frame generation.',
+        npu: 'Handles AI extras like stream background removal at low power.'
+      }
+    },
+    '255H': {
+      id: '255H', family: 'Intel® Core™ Ultra 7', name: 'Intel® Core™ Ultra 7 processor', model: '255H',
+      tagline: 'More power for study, work and light gaming', image: 'assets/chip-ultra7.svg', accent: '#8fd3ff', arcB390: false, series3: false,
+      stats: [['16', 'CPU cores'], ['5.1 GHz', 'Max turbo'], ['Arc 140T', 'Intel graphics'], ['28 W', 'Base power']],
+      laptop: { alsoIn: '' },
+      specs: [
+        { key: true, label: 'CPU cores',       value: '16' },
+        { key: true, label: 'Max turbo',       value: '5.1 GHz' },
+        { key: true, label: 'Graphics',        value: 'Intel Arc 140T' },
+        { key: true, label: 'Base power',      value: '28 W' },
+        { label: 'AI engine (NPU)',            value: '13 TOPS' },
+        { label: 'Generation',                 value: 'Core Ultra Series 2' }
+      ],
+      roles: {
+        cpu: 'Plenty of cores for multitasking, coding and editing.',
+        gpu: 'Intel Arc 140T graphics for smooth visuals and light gaming.',
+        npu: 'Runs everyday AI features like video-call effects at low power.'
+      }
+    },
+    '225H': {
+      id: '225H', family: 'Intel® Core™ Ultra 5', name: 'Intel® Core™ Ultra 5 processor', model: '225H',
+      tagline: 'An affordable Intel AI laptop for study and everyday life', image: 'assets/chip-ultra5.svg', accent: '#8fd3ff', arcB390: false, series3: false,
+      stats: [['14', 'CPU cores'], ['4.9 GHz', 'Max turbo'], ['Arc 130T', 'Intel graphics'], ['28 W', 'Base power']],
+      laptop: { alsoIn: '' },
+      specs: [
+        { key: true, label: 'CPU cores',       value: '14' },
+        { key: true, label: 'Max turbo',       value: '4.9 GHz' },
+        { key: true, label: 'Graphics',        value: 'Intel Arc 130T' },
+        { key: true, label: 'Base power',      value: '28 W' },
+        { label: 'AI engine (NPU)',            value: '13 TOPS' },
+        { label: 'Generation',                 value: 'Core Ultra Series 2' }
+      ],
+      roles: {
+        cpu: 'Runs your apps, browser and study tools fast.',
+        gpu: 'Intel Arc 130T graphics for streaming and everyday visuals.',
+        npu: 'Runs everyday AI features like video-call effects at low power.'
+      }
+    }
+  },
+
   /* winner: 'intel' | 'competitor' | 'tie'. Every row is verified.
      matters: quiz picks the row is most relevant to (highlight these). */
   comparisons: {
     everyday: {
-      competitorName: 'Snapdragon X2 Plus (6-core)',
+      competitorName: 'Snapdragon X2 Plus (6‑core)',
       competitorImage: 'assets/chip-competitor.svg',
       rows: [
         { label: 'Windows apps & games', intel: 'Run natively', competitor: 'Mostly emulated; some online games won’t start', winner: 'intel', matters: ['studying', 'gaming', 'entertainment', 'browsing'] },
@@ -223,7 +287,7 @@ window.PROCESSOR_DATA = {
       advantages: ['Every Windows app and game runs natively. No emulation surprises.']
     },
     pro: {
-      competitorName: 'Snapdragon X2 Plus (10-core)',
+      competitorName: 'Snapdragon X2 Plus (10‑core)',
       competitorImage: 'assets/chip-competitor.svg',
       rows: [
         { label: 'Windows apps & games', intel: 'Run natively', competitor: 'Mostly emulated; some online games won’t start', winner: 'intel', matters: ['work', 'gaming', 'entertainment'] },
@@ -234,7 +298,7 @@ window.PROCESSOR_DATA = {
       advantages: ['Your work apps, plug-ins and VPNs run natively on Intel.']
     },
     creator: {
-      competitorName: 'Snapdragon X2 Elite (12-core)',
+      competitorName: 'Snapdragon X2 Elite (12‑core)',
       competitorImage: 'assets/chip-competitor.svg',
       rows: [
         { label: 'CPU cores',            intel: '16',           competitor: '12',         winner: 'intel',      matters: ['creation', 'work'] },
@@ -257,6 +321,31 @@ window.PROCESSOR_DATA = {
         { label: 'Max CPU speed',             intel: '5.1 GHz',      competitor: '5.2 GHz', winner: 'competitor', matters: [] }
       ],
       advantages: ['About 1.5× the frame rate in PC Gamer’s test, plus AI frame generation.']
+    },
+    '358H': {
+      competitorName: 'AMD Ryzen™ AI 9 HX 470',
+      competitorImage: 'assets/chip-competitor.svg',
+      rows: [
+        { label: 'AI multi-frame generation', intel: 'Yes (XeSS 3)', competitor: 'No', winner: 'intel', matters: ['gaming'] },
+        { label: 'CPU cores',                 intel: '16',           competitor: '12', winner: 'intel', matters: ['creation', 'work'] }
+      ],
+      advantages: ['AI frame generation and more CPU cores in a thin laptop.']
+    },
+    '255H': {
+      competitorName: 'Snapdragon X laptop',
+      competitorImage: 'assets/chip-competitor.svg',
+      rows: [
+        { label: 'Windows apps & games', intel: 'Run natively (x86)', competitor: 'Mostly emulated; some online games won’t start', winner: 'intel', matters: ['studying', 'work', 'gaming', 'entertainment', 'browsing', 'creation'] }
+      ],
+      advantages: ['Every Windows app and game runs natively. No emulation surprises.']
+    },
+    '225H': {
+      competitorName: 'Snapdragon X laptop',
+      competitorImage: 'assets/chip-competitor.svg',
+      rows: [
+        { label: 'Windows apps & games', intel: 'Run natively (x86)', competitor: 'Mostly emulated; some online games won’t start', winner: 'intel', matters: ['studying', 'work', 'gaming', 'entertainment', 'browsing', 'creation'] }
+      ],
+      advantages: ['Every Windows app and game runs natively. No emulation surprises.']
     }
   },
 

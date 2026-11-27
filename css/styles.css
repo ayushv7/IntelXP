@@ -752,7 +752,8 @@ body.share-view .kiosk-bar { display: none; }
 
 /* overflow at the root: flex/grid children may shrink; long names wrap cleanly */
 .modern-inner > *, .chip-info > *, .lap-card > *, .tile > *, .card > *, .btn-row > *, .quiz-grid > *, .stat-tiles > *, .ai-feats > *, .cmp-row > *, .end-card > *, .spec-grid > *, .role-row > * { min-width: 0; }
-.lc-name, .end-ask, .end-sku, .share-model, .share-chip, .lc-chip, .lc-meta, .sheet-title, .cmp-title, .chip-name { overflow-wrap: anywhere; hyphens: manual; }
+.lc-name, .end-ask, .end-sku, .share-model, .share-chip, .lc-chip, .lc-meta, .sheet-title, .chip-name { overflow-wrap: anywhere; hyphens: manual; }
+.cmp-title { overflow-wrap: normal; word-break: normal; hyphens: manual; } /* wraps only between words */
 h1, h2, h3, .m-h1, .m-h2, .ov-title, .cmp-title, .sheet-title { text-wrap: balance; }
 .m-h1, .m-h2, .chip-name, .end-title, .cmp-title { line-height: 1.18; }
 .m-h1 { font-size: clamp(32px, 3.6vw, 72px); }
@@ -871,3 +872,5 @@ button.card:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px;
 }
 /* bigger "features unlocked" lists on end/results screens */
 .ticks { font-size: clamp(18px, 1.8vw, 26px); gap: 12px 32px; font-weight: 700; }
+.stat-tile b { white-space: nowrap; }
+.stat-tile b small { display: block; margin: 0 0 2px; }
