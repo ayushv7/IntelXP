@@ -202,6 +202,10 @@ const LINE_ICONS = {
   shield: '<path d="M12 3l8 3v6c0 4.6-3.4 8.2-8 9-4.6-.8-8-4.4-8-9V6z"/><path d="M8.5 12l2.5 2.5 4.5-5"/>',
   apps:   '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
   bolt:   '<path d="M13 2L4.5 13.5H11L10 22l8.5-11.5H12z"/>',
+  globe:  '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+  cam:    '<rect x="2.5" y="6.5" width="14" height="11" rx="2"/><path d="M16.5 10.5l5-3v9l-5-3"/>',
+  brush:  '<path d="M20 4l-9 9"/><path d="M11 13c-3-1-6 1-6 4 0 1.5-1 2.5-2 3 4 1 8-.5 8-4z"/><path d="M14 4l6 6"/>',
+  cursor: '<path d="M5 3l14 7-6 2-2 6z"/><path d="M13 12l5 5"/>',
   game:   '<path d="M6.5 8h11a4 4 0 0 1 4 4v2.5a3 3 0 0 1-5.3 1.9L14.5 14h-5l-1.7 2.4A3 3 0 0 1 2.5 14.5V12a4 4 0 0 1 4-4z"/><path d="M7.5 10.5v3M6 12h3"/><circle cx="16" cy="11" r=".6"/><circle cx="17.8" cy="13" r=".6"/>'
 };
 const lineIcon = name => `<svg viewBox="0 0 24 24" aria-hidden="true">${LINE_ICONS[name] || LINE_ICONS.ai}</svg>`;
@@ -238,6 +242,13 @@ function laptopSVG(title, accent, { small = false, sub = '' } = {}) {
 }
 
 /* ---- chip screen: the processor is the hero */
+const AI_FEATS = [
+  { ids: ['studying'], icon: 'globe', text: 'Live Captions translate 40+ languages to English' },
+  { ids: ['work'], icon: 'cam', text: 'Windows Studio Effects: blur, eye contact, voice focus' },
+  { ids: ['creation'], icon: 'brush', text: 'Cocreator in Paint + AI photo edits, on-device' },
+  { ids: ['browsing', 'entertainment'], icon: 'cursor', text: 'Click to Do: act on anything on screen' },
+  { ids: ['gaming'], icon: 'game', text: 'Intel XeSS AI upscaling + frame generation' }
+];
 function specValue(p, re) { return (p.specs.find(x => re.test(x.label)) || {}).value || ''; }
 function renderRecommendation() {
   const p = DATA.processors[state.tier];
@@ -246,8 +257,12 @@ function renderRecommendation() {
   $('.chip-halo').style.setProperty('--chip-accent', p.accent);
   $('#rec-name').textContent = chipName(p);
   $('#rec-tagline').textContent = p.tagline;
-  const tiles = [['CPU cores', specValue(p, /cores/i)], ['Max turbo', specValue(p, /turbo/i)], ['AI engine (NPU)', specValue(p, /NPU/i)]].filter(([, v]) => v);
-  $('#rec-tiles').innerHTML = tiles.map(([l, v]) => `<div class="stat-tile" style="--accent:${esc(p.accent)}"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
+  const tiles = [['CPU cores', specValue(p, /cores/i)], ['Max turbo', specValue(p, /turbo/i)], ['AI engine (NPU)', specValue(p, /NPU/i)], ['Battery', '27 hrs*', 'up to ']].filter(([, v]) => v);
+  $('#rec-tiles').innerHTML = tiles.map(([l, v, pre]) => `<div class="stat-tile" style="--accent:${esc(p.accent)}"><b>${pre ? `<small>${esc(pre)}</small>` : ''}${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
+  // "What AI does for you": max 3, from the shopper's picks (order of the list below)
+  const feats = AI_FEATS.filter(f => f.ids.some(id => state.answers.has(id))).slice(0, 3);
+  $('#rec-ai').innerHTML = feats.map(f => `<li style="--accent:${esc(p.accent)}">${lineIcon(f.icon)}<span>${esc(f.text)}</span></li>`).join('');
+  $('.ai-for-you').hidden = !feats.length;
   // tech-specs sheet content
   $('#sheet-title').textContent = `${chipName(p)} · tech specs`;
   $('#sheet-specs').innerHTML = p.specs.map(s => `<div><span>${esc(s.label)}</span><b>${esc(s.value)}</b></div>`).join('');
@@ -274,6 +289,7 @@ function renderLaptops() {
       <b class="lc-name">${esc(m.brand)} ${esc(m.name)}</b>
       <span class="lc-chip">${esc(poweredChip(m.cpu))}</span>
       ${meta ? `<span class="lc-meta">${esc(meta)}</span>` : ''}
+      ${hero ? '<span class="batt-badge">All-day battery</span>' : ''}
     </button>`;
   };
   $('#lap-cards').innerHTML = `<div class="lap-hero-col">${ms[0] ? card(ms[0], 0) : ''}</div><div class="lap-side-col">${ms.slice(1).map((m, i) => card(m, i + 1)).join('')}</div>`;

@@ -186,7 +186,7 @@ window.Minis = (() => {
     const name = fullName(m);
     const ui = shell(root, 'OFFLINE STUDY SPRINT',
       ["You're studying on a train.", `Throw your notes onto the ${esc(name)}.`, 'Watch what happens in the tunnel.'],
-      `<p class="mini-brand">${esc(name)}</p><p class="mini-msg">Your notes stayed on the ${esc(name)}.<br>On-device AI works without internet.</p>`);
+      `<p class="mini-brand">${esc(name)}</p><p class="mini-msg">Your notes stayed on the ${esc(name)}.<br>On-device AI works without internet.</p><p class="mini-try">Try it: Intel AI Playground, free on-device AI for chat and images.</p>`);
     ui.stage.innerHTML = `
       <div class="os2">
         <div class="carriage">

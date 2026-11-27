@@ -827,3 +827,21 @@ body.touch .hud > .hud-bl, body.touch .hud > .hud-br { bottom: calc(var(--edge) 
 .tc-btn.tc-boost.hint { animation: boostPulse 1s ease-in-out infinite; }
 @keyframes boostPulse { 50% { box-shadow: 0 0 0 10px rgba(192, 139, 255, .35), 0 0 24px rgba(192, 139, 255, .8); transform: scale(1.08); } }
 .boost-hint { top: 41%; }
+
+/* ---- proof points */
+.stat-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+.stat-tile { padding: 16px 16px; }
+.stat-tile b { font-size: clamp(26px, 2.3vw, 42px); white-space: nowrap; }
+.stat-tile b small { font-size: .42em; font-family: var(--font-ui); font-weight: 600; color: var(--muted); margin-right: 4px; }
+.fine { margin: -6px 0 0; font-size: 12px; color: var(--muted); line-height: 1.4; }
+.ai-for-you { display: flex; flex-direction: column; gap: 10px; }
+.ai-for-you[hidden] { display: none; }
+.ai-for-you .kicker { margin: 0; }
+.ai-for-you .fine { margin: 0; }
+.ai-feats { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(0, 1fr)); gap: 12px; }
+.ai-feats li { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 14px; background: rgba(255,255,255,.04); font-size: var(--fs-small); line-height: 1.3; }
+.ai-feats svg { flex: none; width: 28px; height: 28px; fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.batt-badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; padding: 4px 12px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent); color: #fff; font-size: 13px; font-weight: 600; }
+.batt-badge::before { content: ''; width: 16px; height: 8px; border: 1.5px solid currentColor; border-radius: 2px; background: linear-gradient(90deg, #3ee08f 80%, transparent 80%) content-box; padding: 1px; }
+.mini-try { margin: 6px 0 0; font-family: var(--font-ui); font-size: 14px; color: var(--cyan); line-height: 1.5; }
+@media (max-width: 900px) { .stat-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ai-feats { grid-template-columns: 1fr; } }
