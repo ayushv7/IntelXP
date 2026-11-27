@@ -45,7 +45,7 @@ Landing ──▶ Missions ──▶ Quiz ──▶ Budget ──▶ Your AI pro
 | **Quiz** | "What will you use your PC for?" Multi-select: studying, work, entertainment, gaming, content creation, browsing. |
 | **Budget** | Four price bands or a custom ₹ amount. |
 | **Your AI processor** | The recommended Intel® Core™ Ultra chip, with key stats and "What AI does for you" lines picked from the quiz answers. If the ideal chip is over budget, one calm line explains the trade-off. |
-| **Laptops** | Up to 3 real laptops with that chip, within budget. Tap a smaller card and it flies into the hero spot. |
+| **Laptops** | Up to 3 real laptops, all full size, side by side. Swipe, scroll, drag or use the arrows; the card snapped to the centre is the one you get. |
 | **How it compares** | Chip vs chip against the nearest competitor. Rows that matter to the shopper are highlighted, and sources are listed. |
 | **Thank-you** | "Ask for the [laptop]" with SKU and price, plus a QR code that opens a phone card saying "Show this in store". |
 
@@ -152,6 +152,7 @@ Specs, the battery claim, Copilot+ feature lines and the comparison are shown on
 | Chips by budget, price bands, laptops (brand, SKU, RAM/storage, ₹ price, tags, "why it fits") | `js/laptops.js` |
 | Every word in the Work and Study missions | the `TEXT` object at the top of `js/mini-work.js` and `js/mini-study.js` |
 | Work mission pacing (calm time, battery drain, end delay) | `TEXT.timing` in `js/mini-work.js` |
+| Study mission pacing (slow crawl, improvement windows, scenario leads) | `TIMING` at the top of `js/mini-study.js` |
 | Race stage lengths | `COIN_S` and `CONG_START` at the top of `js/game.js` and `js/race2d.js` |
 
 Prices change often. They are shown as *"₹price\*"* with *"\*Approx. price seen online, check in store"*. Re-check them and the stock before each event.

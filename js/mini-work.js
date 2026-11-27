@@ -19,8 +19,8 @@
     },
     appName: 'Mail',
     inbox: 'Inbox', work: 'Work', trash: 'Trash',
-    aiSays: 'AI hint',
-    aiSaysLocal: 'On-device AI hint',
+    aiSays: 'AI suggests',
+    aiSaysLocal: 'On-device AI suggests',
     spam: 'SPAM', important: 'IMPORTANT',
     btnImportant: '📁 IMPORTANT', btnSpam: '🗑️ SPAM',
     good: 'Sorted!', bad: 'Oops, wrong folder',
@@ -105,15 +105,18 @@
       shuffle(out).forEach((m, i) => { m.aiSpam = (i % 5 === 3) ? !m.spam : m.spam; queue.push(m); }); // every 5th hint is wrong
     };
     refill();
-    const hint = m => `<em class="ai-hint ${m.aiSpam ? 'is-spam' : 'is-work'}">${esc(hintLabel)}: ${m.aiSpam ? TEXT.spam : TEXT.important}</em>`;
+    const AI_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l2.2 5.6L20 10l-5.8 2.4L12 18l-2.2-5.6L4 10l5.8-2.4z"/><path d="M19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg>';
+    const hint = m => `<em class="ai-badge ${m.aiSpam ? 'is-spam' : 'is-work'}">${AI_ICON}<span>${esc(hintLabel)}: <b>${m.aiSpam ? TEXT.spam : TEXT.important}</b></span></em>`;
     const cardHTML = m => m.spam
-      ? `<article class="mail-card spam"><header><span class="av">!!</span><div><b>${esc(m.from)}</b><small>${esc(m.addr)}</small></div><em class="tag">⚠ Suspicious</em></header>
-          <h4>${esc(m.subj)}</h4><p>${esc(m.body)}</p><footer><span class="cta">CLICK HERE!!!</span>${hint(m)}</footer></article>`
-      : `<article class="mail-card work"><header><span class="av">${esc(m.from.split(/\s/).filter(Boolean).slice(0, 2).map(x => x[0]).join(''))}</span><div><b>${esc(m.from)}</b><small>${esc(m.addr)}</small></div><em class="tag">Work</em></header>
-          <h4>${esc(m.subj)}</h4><p>${esc(m.body)}</p><footer>${m.file ? `<span class="file">📎 ${esc(m.file)}</span>` : '<span></span>'}${hint(m)}</footer></article>`;
+      ? `<article class="mail-card spam"><header><span class="av">!!</span><div><b>${esc(m.from)} <em class="tag">⚠ Suspicious</em></b><small>${esc(m.addr)}</small></div>${hint(m)}</header>
+          <h4>${esc(m.subj)}</h4><p>${esc(m.body)}</p><footer><span class="cta">CLICK HERE!!!</span></footer></article>`
+      : `<article class="mail-card work"><header><span class="av">${esc(m.from.split(/\s/).filter(Boolean).slice(0, 2).map(x => x[0]).join(''))}</span><div><b>${esc(m.from)} <em class="tag">Work</em></b><small>${esc(m.addr)}</small></div>${hint(m)}</header>
+          <h4>${esc(m.subj)}</h4><p>${esc(m.body)}</p><footer>${m.file ? `<span class="file">📎 ${esc(m.file)}</span>` : ''}</footer></article>`;
     function renderStack() {
       if (queue.length < 4) refill();
       stack.innerHTML = queue.slice(0, 3).map((m, i) => `<div class="slot s${i}">${cardHTML(m)}</div>`).reverse().join('');
+      // ring the button that matches the AI's suggestion
+      $('.mail-ai .ok').classList.toggle('suggested', !queue[0].aiSpam); $('.mail-ai .no').classList.toggle('suggested', queue[0].aiSpam);
       $('.n-in').textContent = String(queue.length);
     }
 

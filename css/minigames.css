@@ -166,7 +166,7 @@
 .mail-card header div { display: flex; flex-direction: column; min-width: 0; }
 .mail-card header small { font-size: .78em; opacity: .75; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mail-card .av { flex: none; width: 4cqw; height: 4cqw; display: grid; place-items: center; border-radius: 50%; font-weight: 800; font-size: .9em; }
-.mail-card .tag { margin-left: auto; flex: none; font-style: normal; font-weight: 800; font-size: .8em; padding: .3cqw 1cqw; border-radius: 99px; }
+.mail-card .tag { flex: none; font-style: normal; font-weight: 800; font-size: .8em; padding: .3cqw 1cqw; border-radius: 99px; }
 .mail-card h4 { margin: .6cqw 0 0; font-size: 1.6em; line-height: 1.25; }
 .mail-card p { margin: 0; font-size: 1.12em; }
 .mail-card.work { background: #fff; border-left: .9cqw solid #0a3fc2; }
@@ -184,9 +184,20 @@
 .mail-ai { display: flex; align-items: center; gap: 1.2cqw; padding: 1cqw 1.4cqw; border-radius: 8px; background: #0b1d45; color: #fff; }
 /* email footer: attachment / CTA on the left, small AI hint badge on the right */
 .mail-card footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 1cqw; }
-.ai-hint { flex: none; padding: .3cqw 1cqw; border-radius: 999px; font: 800 .78em var(--font-ui); font-style: normal; color: #fff; opacity: .9; white-space: nowrap; }
-.ai-hint.is-spam { background: #c62828; } .ai-hint.is-work { background: #0f9d58; }
-.wk.local .ai-hint { box-shadow: 0 0 0 2px #3dffa8; }
+/* AI suggestion: large badge at the top-right of each email (~1.5x body text), glow pulse on arrival */
+.ai-badge { margin-left: auto; flex: none; display: inline-flex; align-items: center; gap: .5em; padding: .45em .9em; border-radius: 999px;
+  font: 700 max(13px, 1.65em)/1.15 var(--font-ui); font-style: normal; color: #fff; white-space: nowrap; }
+.ai-badge svg { width: 1.1em; height: 1.1em; fill: currentColor; flex: none; }
+.ai-badge b { font-weight: 900; letter-spacing: .02em; }
+.ai-badge.is-spam { background: #d61f2c; --glow: rgba(255, 60, 70, .75); }
+.ai-badge.is-work { background: #0f9d58; --glow: rgba(61, 255, 168, .7); }
+.slot.s0 .ai-badge { animation: ai-glow 1.4s ease-out 2; }
+@keyframes ai-glow { 0% { box-shadow: 0 0 0 0 var(--glow); } 40% { box-shadow: 0 0 0 .5em transparent, 0 0 1.2em var(--glow); } 100% { box-shadow: 0 0 0 0 transparent; } }
+.wk.local .ai-badge { outline: 2px solid #3dffa8; outline-offset: 2px; }
+.mail-card header .tag { margin-left: .5em; vertical-align: middle; font-size: .8em; }
+.mail-ai .mg-btn.suggested { box-shadow: 0 0 0 3px #fff, 0 0 0 6px var(--ring, #3dffa8); }
+.mail-ai .no.suggested { --ring: #ff6b76; }
+@media (prefers-reduced-motion: reduce) { .slot.s0 .ai-badge { animation: none; } }
 /* sorted email flies to its folder (a copy, so the next email is live immediately) */
 .mail-fly { position: absolute; z-index: 4; pointer-events: none; transition: transform .38s cubic-bezier(.5, 0, .75, 0), opacity .38s; }
 .mail-fly .mail-card { height: 100%; }
@@ -206,3 +217,36 @@
 @media (prefers-reduced-motion: reduce) { .bub, .app-token, .mg-toast-ico, .mg-toggle { animation: none !important; } }
 
 .mg-page.done .ov-text { font-size: clamp(16px, 1.6vw, 22px); line-height: 1.6; color: #fff; }
+
+.app-status.pulsing { animation: gen-pulse 1.1s ease-in-out infinite; }
+@keyframes gen-pulse { 50% { opacity: .35; } }
+/* short phone-landscape screens: readable email text; the AI badge wraps onto its own line instead of overflowing */
+.mail-card header { flex-wrap: wrap; row-gap: .4em; }
+.ai-badge { max-width: 100%; }
+@media (max-height: 500px) {
+  .mail { font-size: max(8px, 2.05cqw); }
+  .mail-side { padding-inline: .4em; }
+  .mail-side .fold { padding: .4em; gap: .3em; }
+  .mail-card { padding: .7em .9em; gap: .35em; }
+  .mail-card h4 { font-size: 1.3em; }
+  .mail-card p { font-size: 1em; }
+  .mail-card .av { width: 2.4em; height: 2.4em; }
+  .ai-badge { font-size: max(12px, 1.5em); padding: .35em .7em; }
+  .mail-ai .mg-btn { min-height: 34px; padding: .4em .8em; font-size: 1.2em; }
+}
+@media (max-height: 500px) {
+  .mail-main { grid-template-columns: 24% 1fr; }
+  .mail-side .fold { font-size: .9em; min-width: 0; }
+  .mail-side .fold em { padding: 0 .25em; }
+  .mail-card footer { display: none; }      /* sender, AI badge, subject and body are enough to decide */
+  .mail-card h4 { font-size: 1.15em; margin: 0; }
+  .mail-card header { row-gap: .25em; }
+}
+@media (max-height: 500px) {
+  .wk-lap { width: min(88cqw, 152cqh); bottom: 1%; }
+  .wk-label { display: none; }
+  .mail-bar { padding-block: .35em; }
+  .mail-pane { padding: .5em .6em .4em; gap: .4em; }
+  .mail-stack .slot { inset: 0 0 1cqw; }
+  .mail-card p { line-height: 1.25; }
+}

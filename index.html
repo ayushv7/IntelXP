@@ -244,7 +244,12 @@
       <button class="corner-btn" data-action="back-rec" aria-label="Back" title="Back">◀</button>
       <div class="modern-inner lap-inner">
         <h2 class="m-h2" id="lap-title">Laptops with this processor</h2>
-        <div class="lap-cards" id="lap-cards"></div>
+        <div class="lap-carousel">
+          <button class="lap-arrow prev" aria-label="Previous laptop">‹</button>
+          <div class="lap-cards" id="lap-cards" tabindex="0" aria-roledescription="carousel" aria-label="Recommended laptops"></div>
+          <button class="lap-arrow next" aria-label="Next laptop">›</button>
+        </div>
+        <div class="lap-dots" id="lap-dots"></div>
         <p class="fine lap-fine">*Approx. price seen online, check in store</p>
         <button class="hex-btn hex-lg" data-action="end">GET THIS LAPTOP ▶</button>
       </div>

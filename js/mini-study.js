@@ -5,6 +5,15 @@
          offline AI) -> congratulations. All on-screen text lives in TEXT.
    ========================================================================= */
 (() => {
+  /* All pacing in one place (ms / %). Total ≈ 60–75 s including reading the dialogs. */
+  const TIMING = {
+    slowMs: 11000, slowTo: 12,        // before scenario 1: crawl 0 -> 12 % over ~11 s ("painfully slow")
+    showMs: 8000,                     // after each unlock: visible improvement before the next scenario
+    tokenAt: 40, powerAt: 75,         // progress reached at the end of each improvement window
+    tokenLeadMs: 3000,                // TOKEN LIMIT banner on screen before the choice appears
+    powerLeadMs: 2500,                // room goes dark (flickering) before the question appears
+    finishMs: 1500                    // "submitted" before the congratulations page
+  };
   const TEXT = {
     title: 'STUDY MISSION',
     intro: {
@@ -23,6 +32,7 @@
     outTitle: 'Assignment 4 · answers',
     waiting: 'Waiting for your notes…',
     generating: 'Generating answers…',
+    generatingT: s => `Generating answers… ⏱ ${s}s`,
     answer: 'Q1. A body stays at rest or keeps moving in a straight line unless a force acts on it (Newton\'s first law). ' +
       'Q2. In an exothermic reaction, energy is released as heat, so the surroundings get warmer. ' +
       'Q3. d/dx (x²) = 2x, so the slope of y = x² at x = 3 is 6. ' +
@@ -141,33 +151,37 @@
     function $$(r, s) { return [...r.querySelectorAll(s)]; }
 
     function begin() {
-      phase = 'slow'; rate = .9; $('.st-hint').hidden = true; $('.app-drop').classList.add('full');
-      status.textContent = TEXT.generating; window.SFX?.whoosh();
+      phase = 'slow'; rate = TIMING.slowTo / (TIMING.slowMs / 1000); slowT0 = performance.now();
+      $('.st-hint').hidden = true; $('.app-drop').classList.add('full');
+      status.textContent = TEXT.generatingT(0); status.classList.add('pulsing'); window.SFX?.whoosh();
       run();
     }
 
+    /** Fast window after an unlock: reach `target` % in TIMING.showMs, then hold. */
+    const improve = target => { rate = Math.max(0, target - p) / (TIMING.showMs / 1000); phase = 'fast'; return ctx.wait(TIMING.showMs); };
     async function run() {
-      await ctx.wait(3600); if (ctx.dead) return;
+      await ctx.wait(TIMING.slowMs); if (ctx.dead) return;
+      rate = 0; status.classList.remove('pulsing');
       await ui.ask({ title: TEXT.slow.title, text: TEXT.slow.text, choices: [{ label: TEXT.slow.yes }] }); if (ctx.dead) return;
-      ui.unlock(TEXT.feat1); rate = 11; phase = 'fast'; st.classList.add('boosted');
-      await until(() => p >= 40); if (ctx.dead) return;
+      ui.unlock(TEXT.feat1); st.classList.add('boosted'); status.textContent = TEXT.generating;
+      await improve(TIMING.tokenAt); if (ctx.dead) return;
       // token limit
-      rate = 0; phase = 'token'; st.classList.add('token'); window.SFX?.error();
-      await ctx.wait(1800); if (ctx.dead) return;
+      rate = 0; p = Math.max(p, TIMING.tokenAt); phase = 'token'; st.classList.add('token'); window.SFX?.error();
+      await ctx.wait(TIMING.tokenLeadMs); if (ctx.dead) return;
       await ui.ask({ title: TEXT.token.title, text: TEXT.token.text, tone: 'alert', choices: [{ label: TEXT.token.pay, kind: 'ghost', wrong: TEXT.token.wrong }, { label: TEXT.token.npu }] }); if (ctx.dead) return;
       st.classList.remove('token'); st.classList.add('local');
       $('.app-pill').textContent = TEXT.pillLocal; status.textContent = TEXT.localNote;
-      ui.unlock(TEXT.feat2); rate = 11; phase = 'fast';
-      await until(() => p >= 75); if (ctx.dead) return;
+      ui.unlock(TEXT.feat2);
+      await improve(TIMING.powerAt); if (ctx.dead) return;
       // power cut
-      rate = 0; phase = 'power'; dark = true; st.classList.add('dark'); window.SFX?.crash(.4);
-      await ctx.wait(1400); if (ctx.dead) return;
+      rate = 0; p = Math.max(p, TIMING.powerAt); phase = 'power'; dark = true; st.classList.add('dark'); window.SFX?.crash(.4);
+      await ctx.wait(TIMING.powerLeadMs); if (ctx.dead) return;
       await ui.ask({ title: TEXT.power.title, text: TEXT.power.text, tone: 'alert', choices: [{ label: TEXT.power.yes }] }); if (ctx.dead) return;
       st.classList.add('offline-ok'); $('.app-pill').textContent = TEXT.pillOffline;
-      ui.unlock(TEXT.feat3); rate = 11; phase = 'fast';
-      await until(() => p >= 100); if (ctx.dead) return;
-      phase = 'done'; status.textContent = '✓ Assignment submitted';
-      await ctx.wait(900); if (ctx.dead) return;
+      ui.unlock(TEXT.feat3);
+      await improve(100); if (ctx.dead) return;
+      p = 100; phase = 'done'; status.textContent = '✓ Assignment submitted';
+      await ctx.wait(TIMING.finishMs); if (ctx.dead) return;
       ui.finish({
         title: TEXT.done.title, lines: TEXT.done.lines, features: TEXT.done.features,
       });
@@ -175,9 +189,10 @@
     const until = cond => new Promise(res => { const chk = () => { if (ctx.dead || cond()) res(); else ctx.later(chk, 80); }; chk(); });
 
     /* ---------------- loop: progress, typed answers, clock, room */
-    let drawT = 0;
+    let drawT = 0, slowT0 = 0, lastSec = -1;
     ctx.loop((dt, t) => {
       if (rate > 0) p = Math.min(100, p + rate * dt);
+      if (phase === 'slow') { const sec = Math.floor((performance.now() - slowT0) / 1000); if (sec !== lastSec) { lastSec = sec; status.textContent = TEXT.generatingT(sec); } }
       prog.style.transform = `scaleX(${p / 100})`; pct.textContent = `${Math.floor(p)}%`;
       out.textContent = TEXT.answer.slice(0, Math.floor(TEXT.answer.length * p / 100));
       const m = Math.min(58, 40 + Math.floor(p * .18)); if (m !== minute) { minute = m; $('.st-clock').textContent = TEXT.clock(m); }

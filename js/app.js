@@ -369,57 +369,77 @@ function renderLaptops() {
   const allThisChip = ms.length && ms.every(m => cpuShort(m.cpu).endsWith(' ' + chipModel));
   // accuracy: only say "this processor" when every listed laptop really has it
   $('#lap-title').textContent = allThisChip ? 'Laptops with this processor' : 'Recommended laptops';
-  // the selected laptop sits in the hero slot; the ribbon stays on the original top pick
-  const order = state.model ? [state.model, ...ms.filter(m => m !== state.model)] : ms;
-  const card = (m, pos) => {
-    const hero = pos === 0, top = m === ms[0] && m.hero !== false;
+  const batt = p.series3 !== false; // "All-day battery" only on Core Ultra Series 3 chips
+  const card = (m, i) => {
     const meta = [m.memory, m.price && `${m.price}*`].filter(Boolean).join(' · ');
-    return `<button class="card lap-card ${hero ? 'hero' : ''}" data-k="${ms.indexOf(m)}" aria-pressed="${m === state.model}" style="--accent:${esc(p.accent)}">
-      ${top ? '<span class="chip-pill ribbon">MOST RECOMMENDED</span>' : ''}
-      ${hero ? `<div class="lap-card-art">${laptopSVG(m.brand, p.accent, { sub: m.name })}</div>` : ''}
+    return `<article class="card lap-card" data-k="${i}" aria-roledescription="slide" aria-label="${i + 1} of ${ms.length}" style="--accent:${esc(p.accent)}">
+      ${i === 0 && m.hero !== false ? '<span class="chip-pill ribbon">MOST RECOMMENDED</span>' : ''}
+      <div class="lap-card-art">${laptopSVG(m.brand, p.accent, { sub: m.name })}</div>
       <b class="lc-name">${esc(m.brand)} ${esc(m.name)}</b>
       <span class="lc-chip">${esc(poweredChip(m.cpu))}</span>
       ${m.whyItFits ? `<span class="lc-why">${esc(m.whyItFits)}</span>` : ''}
       ${meta ? `<span class="lc-meta">${esc(meta)}</span>` : ''}
-      ${hero ? '<span class="chip-pill batt-badge">All-day battery</span>' : ''}
-    </button>`;
+      ${batt ? '<span class="chip-pill batt-badge">All-day battery</span>' : ''}
+    </article>`;
   };
-  const box = $('#lap-cards');
-  box.innerHTML = `<div class="lap-hero-col">${order[0] ? card(order[0], 0) : ''}</div><div class="lap-side-col">${order.slice(1).map((m, i) => card(m, i + 1)).join('')}</div>`;
-  box.onclick = e => {
-    const c = e.target.closest('.lap-card'); if (!c || swapping) return;
-    const m = ms[+c.dataset.k]; if (!m || m === state.model) return;
-    window.SFX?.tick(); swapTo(m);
+  const row = $('#lap-cards');
+  row.innerHTML = ms.map(card).join('');
+  $('#lap-dots').innerHTML = ms.length > 1 ? ms.map((_, i) => `<button class="lap-dot" data-k="${i}" aria-label="Laptop ${i + 1} of ${ms.length}"></button>`).join('') : '';
+  $('.lap-carousel').classList.toggle('single', ms.length < 2);
+  const select = k => {
+    if (!ms[k]) return;
+    state.model = ms[k];
+    $$('.lap-card', row).forEach(c => c.setAttribute('aria-current', String(+c.dataset.k === k)));
+    $$('.lap-dot').forEach(d => d.setAttribute('aria-current', String(+d.dataset.k === k)));
+    $('.lap-arrow.prev').disabled = k === 0; $('.lap-arrow.next').disabled = k === ms.length - 1;
+    window.__app && window.__app.saveProgress?.();
   };
+  const goTo = (k, smooth = true) => {
+    const c = row.children[k]; if (!c) return;
+    row.scrollTo({ left: c.offsetLeft - (row.clientWidth - c.offsetWidth) / 2, behavior: smooth && !matchMedia('(prefers-reduced-motion: reduce)').matches ? 'smooth' : 'auto' });
+  };
+  // the card snapped to the centre is the selected one
+  lapObserver?.disconnect();
+  lapObserver = new IntersectionObserver(entries => {
+    const best = entries.filter(e => e.isIntersecting).sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
+    if (best) select(+best.target.dataset.k);
+  }, { root: row, rootMargin: '0px -35% 0px -35%', threshold: [0, .25, .5, .75, 1] });
+  $$('.lap-card', row).forEach(c => lapObserver.observe(c));
+  $('#lap-dots').onclick = e => { const d = e.target.closest('.lap-dot'); if (d) goTo(+d.dataset.k); };
+  row.onclick = e => { const c = e.target.closest('.lap-card'); if (c && +c.dataset.k !== ms.indexOf(state.model)) goTo(+c.dataset.k); }; // tap a peeking card to bring it to the centre
+  $('.lap-arrow.prev').onclick = () => goTo(Math.max(0, ms.indexOf(state.model) - 1));
+  $('.lap-arrow.next').onclick = () => goTo(Math.min(ms.length - 1, ms.indexOf(state.model) + 1));
+  const k0 = Math.max(0, ms.indexOf(state.model));
+  select(k0);
+  requestAnimationFrame(() => goTo(k0, false));
 }
-/** FLIP: the tapped card flies into the hero slot while the hero shrinks into its place. */
-let swapping = false;
-function swapTo(m) {
-  const box = $('#lap-cards');
-  if (!box.animate || matchMedia('(prefers-reduced-motion: reduce)').matches) { // crossfade instead
-    swapping = true;
-    if (box.animate) box.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160 });
-    setTimeout(() => {
-      state.model = m; renderLaptops();
-      if (box.animate) box.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220 });
-      swapping = false;
-    }, box.animate ? 160 : 0);
-    return;
-  }
-  const first = {};
-  $$('.lap-card', box).forEach(c => { first[c.dataset.k] = c.getBoundingClientRect(); });
-  state.model = m; renderLaptops();
-  swapping = true;
-  const D = 450, E = 'cubic-bezier(.16, 1, .3, 1)';
-  $$('.lap-card', box).forEach(c => {
-    const a = first[c.dataset.k], b = c.getBoundingClientRect(); if (!a) return;
-    c.animate([
-      { transformOrigin: '0 0', transform: `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${a.width / b.width}, ${a.height / b.height})` },
-      { transformOrigin: '0 0', transform: 'none' }
-    ], { duration: D, easing: E });
-    $$('.lap-card-art, .batt-badge', c).forEach(x => x.animate([{ opacity: 0 }, { opacity: 0, offset: .35 }, { opacity: 1 }], { duration: D, easing: 'ease-out' }));
+let lapObserver = null;
+/* laptops row: mouse wheel scrolls sideways; mouse drag scrolls (touch/trackpad scroll natively) */
+{
+  const row = $('#lap-cards');
+  row.addEventListener('wheel', e => {
+    if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+    e.preventDefault(); row.scrollBy({ left: e.deltaY, behavior: 'auto' });
+  }, { passive: false });
+  let drag = null;
+  row.addEventListener('pointerdown', e => {
+    if (e.pointerType !== 'mouse' || e.button !== 0) return;
+    drag = { x: e.clientX, left: row.scrollLeft, moved: false };
+    row.classList.add('dragging');
   });
-  setTimeout(() => { swapping = false; }, D);
+  addEventListener('pointermove', e => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x; if (Math.abs(dx) > 4) drag.moved = true;
+    row.scrollLeft = drag.left - dx;
+  });
+  addEventListener('pointerup', () => {
+    if (!drag) return;
+    row.classList.remove('dragging'); drag = null; // scroll-snap settles on the nearest card
+  });
+  row.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight') $('.lap-arrow.next').click();
+    if (e.key === 'ArrowLeft') $('.lap-arrow.prev').click();
+  });
 }
 
 function renderComparison() {

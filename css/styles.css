@@ -191,8 +191,8 @@ body.in-game .kiosk-bar { display: none; }
 .hud-system-name { margin: 2px 0 8px; font-size: 1.05em; color: var(--white); }
 .hud-system-name.ai { color: var(--gold); }
 .upgrade-slots { display: flex; gap: 6px; }
-.slot { font-size: .75em; padding: 5px 7px; border-radius: 6px; background: rgba(4, 14, 34, .45); color: rgba(220, 235, 255, .55); border: 1px solid rgba(255, 255, 255, .15); }
-.slot.on { background: var(--gold); color: #2a1d00; border-color: var(--gold); text-shadow: none; box-shadow: 0 0 12px rgba(255, 200, 69, .55); }
+.upgrade-slots .slot { font-size: .75em; padding: 5px 7px; border-radius: 6px; background: rgba(4, 14, 34, .45); color: rgba(220, 235, 255, .55); border: 1px solid rgba(255, 255, 255, .15); }
+.upgrade-slots .slot.on { background: var(--gold); color: #2a1d00; border-color: var(--gold); text-shadow: none; box-shadow: 0 0 12px rgba(255, 200, 69, .55); }
 
 .hud-progress { top: var(--edge); left: 50%; transform: translateX(-50%); width: min(420px, 36vw); }
 
@@ -241,7 +241,6 @@ body.touch .hud-br { bottom: calc(var(--edge) + clamp(90px, 12vw, 140px)); }
 kbd { display: inline-block; padding: 3px 6px; margin: 0 1px; border: 1px solid var(--line); border-radius: 4px; color: var(--white); font-family: var(--font-pixel); font-size: 8px; }
 .countdown-bar { width: 70%; height: 4px; border-radius: 4px; background: rgba(255,255,255,.12); overflow: hidden; }
 .countdown-bar i { display: block; height: 100%; width: 0; background: var(--cyan); }
-
 
 .upgrade-toast { position: absolute; top: 20%; left: 50%; transform: translate(-50%, -16px); opacity: 0; pointer-events: none; text-align: center; z-index: 8;
   padding: 18px 34px; background: rgba(4, 14, 34, .72); backdrop-filter: blur(6px); border-radius: 16px; border: 1.5px solid var(--gold); max-width: min(560px, 92vw);
@@ -401,7 +400,7 @@ kbd { display: inline-block; padding: 3px 6px; margin: 0 1px; border: 1px solid 
 /* ---------- Minimal race HUD + pickup feedback ---------- */
 .hud-tl .hud-system-name { font-size: clamp(14px, 1.3vw, 20px); margin-bottom: 10px; }
 .hud-tl .slot { font-size: clamp(11px, .9vw, 14px); padding: 8px 11px; }
-.slot.pop { animation: slot-pop .5s var(--ease); }
+.upgrade-slots .slot.pop { animation: slot-pop .5s var(--ease); }
 @keyframes slot-pop { 40% { transform: scale(1.45); box-shadow: 0 0 22px rgba(255, 200, 69, .9); } }
 .hud-progress { width: min(420px, 34vw); padding-top: 12px; }
 .bar.progress { height: 5px; }
@@ -506,8 +505,6 @@ body.touch .hud > .hud-bl, body.touch .hud > .hud-br { bottom: calc(var(--edge) 
    Minigames v2: hero laptop component, animated call room, train carriage
    ========================================================================= */
 
-.mini-brand { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: clamp(28px, 3vw, 48px); line-height: 1.1; color: var(--cyan); text-shadow: 0 0 18px rgba(0, 224, 255, .45); }
-
 /* generic laptop (no logos): brand + model on the bezel */
 
 /* WORK: the call runs on the pro hero laptop */
@@ -600,8 +597,7 @@ body.touch .hud > .hud-bl, body.touch .hud > .hud-br { bottom: calc(var(--edge) 
 /* ---------- Laptops screen ---------- */
 .lap-inner { width: min(1200px, 100%); gap: clamp(14px, 2.4vh, 26px); }
 .lap-cards { width: 100%; display: grid; grid-template-columns: 1.35fr 1fr; gap: 22px; align-items: stretch; }
-.lap-hero-col, .lap-side-col { display: flex; flex-direction: column; gap: 22px; }
-.lap-side-col { justify-content: center; }
+
 .lap-card { position: relative; display: flex; flex-direction: column; gap: 4px; padding: 18px 22px; min-height: 80px; text-align: left; border-radius: 22px;
   background: rgba(255,255,255,.04); border: 2px solid rgba(255,255,255,.12); color: var(--white); transition: border-color var(--t-ui), box-shadow var(--t-ui), transform var(--t-ui); font-family: var(--font-ui); }
 .lap-card:active { transform: scale(.985); }
@@ -640,7 +636,7 @@ body.touch .hud > .hud-bl, body.touch .hud > .hud-br { bottom: calc(var(--edge) 
 .ai-feats svg { flex: none; width: 28px; height: 28px; fill: none; stroke: var(--accent); stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .batt-badge { display: inline-flex; align-items: center; gap: 6px; margin-top: 4px; padding: 4px 12px; border-radius: 999px; border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent); color: #fff; font-size: 13px; font-weight: 600; }
 .batt-badge::before { content: ''; width: 16px; height: 8px; border: 1.5px solid currentColor; border-radius: 2px; background: linear-gradient(90deg, #3ee08f 80%, transparent 80%) content-box; padding: 1px; }
-.mini-try { margin: 6px 0 0; font-family: var(--font-ui); font-size: 14px; color: var(--cyan); line-height: 1.5; }
+
 @media (max-width: 900px) { .stat-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } .ai-feats { grid-template-columns: 1fr; } }
 
 /* ---- attract mode */
@@ -690,7 +686,7 @@ body.share-view .kiosk-bar { display: none; }
 
 /* ---- reduced motion: no shakes, bounces, pulses or flashes */
 @media (prefers-reduced-motion: reduce) {
-  .shake, .bounce, .pulse, .attract-cta, .attract-lap.in, .slot.pop { animation: none !important; }
+  .shake, .bounce, .pulse, .attract-cta, .attract-lap.in, .upgrade-slots .slot.pop { animation: none !important; }
   #flash, #wipe { display: none !important; }
 }
 .lb-list.attract-lb { padding: 14px 18px; width: auto; }
@@ -799,9 +795,7 @@ button.card:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px;
 
 /* laptops: equal-height side cards, price pinned to the card bottom */
 .lap-cards { gap: var(--s5); }
-.lap-hero-col, .lap-side-col { gap: var(--s5); min-width: 0; }
-.lap-side-col { justify-content: stretch; }
-.lap-side-col .lap-card { flex: 1; }
+
 .lap-card { gap: var(--s1); padding: var(--s5); }
 .lap-card.hero { padding-top: var(--s6); }
 .lap-card .lc-meta { margin-top: auto; padding-top: var(--s2); }
@@ -872,5 +866,44 @@ button.card:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px;
 }
 /* bigger "features unlocked" lists on end/results screens */
 .ticks { font-size: clamp(18px, 1.8vw, 26px); gap: 12px 32px; font-weight: 700; }
-.stat-tile b { white-space: nowrap; }
+.stat-tile b:has(small) { white-space: nowrap; }
 .stat-tile b small { display: block; margin: 0 0 2px; }
+
+/* ---------- Laptops: horizontal snap carousel (all cards full size, next card peeks) ---------- */
+.lap-carousel { position: relative; width: 100%; container-type: inline-size; }
+.lap-cards { --cw: min(460px, 74cqw); display: flex; gap: var(--s5); grid-template-columns: none; overflow-x: auto; overflow-y: hidden;
+  scroll-snap-type: x mandatory; scroll-behavior: smooth; overscroll-behavior-x: contain; scrollbar-width: none;
+  padding: var(--s5) calc((100cqw - var(--cw)) / 2); align-items: stretch; cursor: grab; outline: none; }
+.lap-cards::-webkit-scrollbar { display: none; }
+.lap-cards.dragging { cursor: grabbing; scroll-snap-type: none; scroll-behavior: auto; user-select: none; }
+.lap-cards.dragging .lap-card { pointer-events: none; }
+.lap-cards .lap-card { flex: 0 0 var(--cw); scroll-snap-align: center; scroll-snap-stop: always; display: flex; flex-direction: column; align-items: center; text-align: center;
+  padding: var(--s6) var(--s5) var(--s5); opacity: .55; transform: scale(.94); transition: opacity var(--t-ui) var(--ease), transform var(--t-ui) var(--ease), box-shadow var(--t-ui) var(--ease), border-color var(--t-ui) var(--ease); }
+.lap-cards .lap-card[aria-current="true"] { opacity: 1; transform: none; border-color: var(--accent); box-shadow: var(--shadow-card), 0 0 0 2px var(--accent), 0 0 32px color-mix(in srgb, var(--accent) 35%, transparent); }
+.lap-cards .lap-card .lc-name { font-size: clamp(22px, 2vw, 34px); }
+.lap-cards .lap-card .lc-meta { margin-top: auto; padding-top: var(--s2); }
+.lap-cards .lap-card .lap-card-art { width: min(100%, 260px, 26vh); }
+.lap-cards .ribbon.chip-pill { top: 12px; left: 50%; right: auto; transform: translateX(-50%); }
+.lap-dots { display: flex; justify-content: center; gap: var(--s3); min-height: 12px; }
+.lap-dot { width: 12px; height: 12px; padding: 0; border-radius: var(--r-pill); background: rgba(255, 255, 255, .25); transition: width var(--t-ui) var(--ease), background var(--t-ui) var(--ease); }
+.lap-dot[aria-current="true"] { width: 32px; background: var(--cyan); }
+.lap-dot:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px; }
+.lap-arrow { position: absolute; top: 50%; z-index: 2; width: 56px; height: 56px; margin-top: -28px; border-radius: var(--r-pill); display: grid; place-items: center;
+  font-size: 34px; line-height: 1; color: #fff; background: rgba(4, 14, 34, .8); border: var(--border); box-shadow: var(--shadow-card); transition: transform var(--t-ui) var(--ease), opacity var(--t-ui) var(--ease); }
+.lap-arrow.prev { left: 0; } .lap-arrow.next { right: 0; }
+.lap-arrow:hover { transform: scale(1.08); border-color: var(--cyan); }
+.lap-arrow:disabled { opacity: 0; pointer-events: none; }
+.lap-carousel.single .lap-arrow { display: none; }
+body.touch .lap-arrow { display: none; }          /* swipe on touch screens */
+@media (max-height: 500px) {
+  .lap-cards { --cw: min(340px, 60cqw); padding-block: var(--s3); }
+  .lap-cards .lap-card { padding: var(--s5) var(--s4) var(--s4); }
+  .lap-cards .lap-card .lap-card-art { width: min(100%, 26vh); }
+  .lap-cards .lap-card .lc-name { font-size: 20px; }
+}
+@media (min-height: 501px) {
+  .lap-inner { gap: var(--s4); }
+  .lap-cards { padding-block: var(--s3); }
+  .lap-cards .lap-card { padding: var(--s6) var(--s5) var(--s4); gap: 2px; }
+  .lap-cards .lap-card .lap-card-art { width: min(100%, 230px, 22vh); }
+}
