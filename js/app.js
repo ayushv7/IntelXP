@@ -5,9 +5,6 @@ const DATA = window.PROCESSOR_DATA;
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 
-const IDLE_RESET_MS = 60000;   // reset to landing after 60 s of inactivity
-const IDLE_RESET_END_MS = 90000; // the end screen stays up longer for the store associate
-const IDLE_WARN_BEFORE_MS = 10000; // show "still there?" 10 s before reset
 const ATTRACT_AFTER_MS = 30000;    // landing idle -> silent demo race
 
 const state = {
@@ -42,6 +39,7 @@ function show(name) {
   next.classList.add('active');
   next.scrollTop = 0;
   state.screen = name;
+  if (typeof saveProgress === 'function') saveProgress();
   document.body.classList.toggle('in-game', name === 'game');
   if (name === 'landing') startStars(); else stopStars();
   // move focus for keyboard users (not in-game: Space/arrows drive the car there)
@@ -104,8 +102,7 @@ const actions = {
   'close-sheet': () => closeSheet(),
   'back-rec': () => { closeSheet(); show('rec'); },
   end: () => { closeSheet(); renderEnd(); show('end'); window.SFX?.jingle(); },
-  restart: () => resetAll(),
-  stay: () => bumpActivity()
+  restart: () => resetAll()
 };
 
 document.addEventListener('click', e => {
@@ -121,10 +118,10 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape' && state.screen === 'game') actions['exit-game']();
 });
 
-function markComplete(id) {
+function markComplete(id, quiet = false) {
   state.completed.add(id);
   const wasUnlocked = state.unlocked;
-  if (!wasUnlocked) setTimeout(() => window.SFX?.unlock(), 350);
+  if (!wasUnlocked && !quiet) setTimeout(() => window.SFX?.unlock(), 350);
   state.unlocked = true;
   const card = $(`.mission[data-action="play-${id}"]`);
   card?.classList.add('done');
@@ -153,7 +150,6 @@ function resetAll() {
   hint.classList.remove('ready');
   $$('.quiz-opt').forEach(o => o.setAttribute('aria-pressed', 'false'));
   $('#quiz-msg').textContent = '';
-  hideIdle();
   show('landing');
 }
 
@@ -543,8 +539,7 @@ async function startAttract() {
   $('#screen-game').classList.add('active');
   document.body.classList.add('attract-on');
   if (window.SFX) window.SFX.silent = true;
-  const names = DATA.tierOrder.flatMap(t => (DATA.processors[t].laptop.models || []).map(m => `${m.brand} ${m.name}`));
-  const uniq = [...new Set(names)];
+  const uniq = ['Intel AI PC', 'Faster AI, on-device', 'All-day battery', 'Works offline', 'AI upscaling for games']; // no laptop names before the quiz
   let k = 0;
   const rot = () => { const el = $('#attract-lap'); el.textContent = uniq[k++ % uniq.length] || ''; el.classList.remove('in'); void el.offsetWidth; el.classList.add('in'); };
   rot(); clearInterval(attractTimer); attractTimer = setInterval(rot, 2800);
@@ -664,27 +659,62 @@ soundBtn.addEventListener('click', () => { window.SFX?.toggleMute(); paintSound(
 if (!window.SFX) soundBtn.hidden = true; else paintSound();
 if (!document.fullscreenEnabled && !document.webkitFullscreenEnabled) $('#btn-fullscreen').style.display = 'none';
 
-/* ------------------------------------------------------- idle / kiosk */
+/* ------------------------------------------- activity (attract mode only) */
+// No inactivity reset: progress is never thrown away. The only idle behaviour is the
+// silent attract demo, and only while the landing screen is showing.
 let lastActivity = performance.now();
-let idleShown = false;
-function bumpActivity() {
-  lastActivity = performance.now();
-  if (idleShown) hideIdle();
-}
-function hideIdle() { idleShown = false; $('#idle-overlay').classList.remove('show'); }
+function bumpActivity() { lastActivity = performance.now(); }
 ['pointerdown', 'keydown', 'touchstart', 'wheel'].forEach(ev =>
   window.addEventListener(ev, bumpActivity, { passive: true, capture: true }));
 setInterval(() => {
-  if (state.screen === 'share' || state.screen === 'attract') return;
-  const idle = performance.now() - lastActivity;
-  if (state.screen === 'landing') { if (idle >= ATTRACT_AFTER_MS) startAttract(); return; }
-  const limit = state.screen === 'end' ? IDLE_RESET_END_MS : IDLE_RESET_MS;
-  if (idle >= limit) { resetAll(); return; }
-  if (idle >= limit - IDLE_WARN_BEFORE_MS) {
-    if (!idleShown) { idleShown = true; $('#idle-overlay').classList.add('show'); }
-    $('#idle-count').textContent = Math.ceil((limit - idle) / 1000);
-  }
+  if (state.screen !== 'landing') return;
+  if (performance.now() - lastActivity >= ATTRACT_AFTER_MS) startAttract();
 }, 250);
+
+/* --------------------------------- progress survives an accidental refresh */
+const SAVE_KEY = 'aipc-progress';
+const RESUMABLE = ['landing', 'select', 'quiz', 'budget', 'rec', 'laptops', 'compare', 'end'];
+function saveProgress() {
+  if (state.screen === 'share') return;
+  try {
+    sessionStorage.setItem(SAVE_KEY, JSON.stringify({
+      screen: RESUMABLE.includes(state.screen) ? state.screen : 'select', // mid-game -> mission select
+      unlocked: state.unlocked, completed: [...state.completed], answers: [...state.answers],
+      budget: state.budget === Infinity ? 'Infinity' : state.budget,
+      custom: $('#budget-input').value, model: state.model?.sku || null
+    }));
+  } catch {}
+}
+function restoreProgress() {
+  let d;
+  try { d = JSON.parse(sessionStorage.getItem(SAVE_KEY) || 'null'); } catch { return false; }
+  if (!d || !RESUMABLE.includes(d.screen) || d.screen === 'landing') return false;
+  (d.completed || []).forEach(id => markComplete(id, true));
+  state.unlocked = !!d.unlocked;
+  (d.answers || []).forEach(id => { state.answers.add(id); $(`.quiz-opt[data-id="${id}"]`)?.setAttribute('aria-pressed', 'true'); });
+  if (state.answers.size) $('#quiz-msg').textContent = `${state.answers.size} selected`;
+  state.budget = d.budget === 'Infinity' ? Infinity : d.budget;
+  $('#budget-input').value = d.custom || '';
+  if (!d.custom) $$('.budget-opt').forEach(o => o.setAttribute('aria-pressed', String(Number(o.dataset.max) === state.budget)));
+  let screen = d.screen;
+  if (['rec', 'laptops', 'compare', 'end'].includes(screen)) {
+    if (!(state.budget > 0) || !state.answers.size) screen = state.answers.size ? 'budget' : 'quiz';
+    else {
+      state.result = recommendWithBudget([...state.answers], state.budget);
+      state.tier = state.result.chip.idealFor || computeTier([...state.answers]);
+      state.model = state.result.laptops.find(m => m.sku === d.model) || null;
+      renderRecommendation();
+      if (screen === 'laptops') renderLaptops();
+      if (screen === 'compare') renderComparison();
+      if (screen === 'end') renderEnd();
+    }
+  }
+  show(screen);
+  return true;
+}
+// save after every interaction that can change progress (clicks, typing a budget)
+document.addEventListener('click', () => setTimeout(saveProgress, 0));
+document.addEventListener('input', () => setTimeout(saveProgress, 0));
 
 /* ---------------------------------------------- landing pixel visuals */
 let starRAF = 0, stars = [];
@@ -740,7 +770,7 @@ const SHARE = new URLSearchParams(location.search);
 if (SHARE.get('result') && renderShare(SHARE.get('result'), SHARE.get('model'))) {
   document.body.classList.add('share-view');
   show('share');
-} else startStars();
+} else if (!restoreProgress()) startStars();
 // Warm the 3D engine download in the background so the race starts fast.
 setTimeout(() => {
   if (gameModulePromise || use2d || state.screen === 'share') return;
@@ -754,4 +784,4 @@ if (new URLSearchParams(location.search).get('debug') === 'layout') {
 }
 
 // Expose for automated testing / debugging
-window.__app = { state, show, computeTier, recommendWithBudget, get game() { return game; }, get idleMs() { return performance.now() - lastActivity; } };
+window.__app = { state, show, computeTier, recommendWithBudget, get game() { return game; }, get idleMs() { return performance.now() - lastActivity; }, saveProgress };

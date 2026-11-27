@@ -48,14 +48,11 @@
       title: 'ASSIGNMENT DONE!',
       lines: ['Submitted before the deadline, on battery, with no internet and no subscription.'],
       features: ['Faster AI processing', 'Free local AI on the Intel NPU', 'Offline AI workload'],
-      tryIt: 'Try it: Intel AI Playground, free on-device AI for chat and images.',
-      laptop: name => `Get it on the ${name}`
     }
   };
 
   window.Minis.register('learning', (ctx, kit) => {
     const { esc, clamp } = ctx;
-    const hero = ctx.heroOf('everyday');
     const ui = kit.shell({ title: TEXT.title, cls: 'mg-study' });
     ui.scene.innerHTML = `
       <div class="st">
@@ -173,7 +170,6 @@
       await ctx.wait(900); if (ctx.dead) return;
       ui.finish({
         title: TEXT.done.title, lines: TEXT.done.lines, features: TEXT.done.features,
-        extraHTML: `${hero ? `<p class="mini-brand">${esc(TEXT.done.laptop(ctx.fullName(hero)))}</p>` : ''}<p class="mini-try">${esc(TEXT.done.tryIt)}</p>`
       });
     }
     const until = cond => new Promise(res => { const chk = () => { if (ctx.dead || cond()) res(); else ctx.later(chk, 80); }; chk(); });

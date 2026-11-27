@@ -8,7 +8,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
   if (!g) throw new Error('2D canvas unavailable');
 
   /* ---------------- tuning (mirrors game.js) */
-  const TRACK_LEN = 4000, COIN_S = [430, 1250, 2480], CONG_START = 1700, CONG_END = 2900;
+  const TRACK_LEN = 4000, COIN_S = [330, 1250, 2480], CONG_START = 2140, CONG_END = 2900;
   const LANES = [-6, -2, 2, 6], LIMIT = 7, TUTORIAL_MS = 4000;
   const V_MAX = 72, V_BOOST = 96, V_CRUISE = 30, V_MIN_BRAKE = 12, ACCEL = 15, BRAKE_DECEL = 34, BOOST_ACCEL = 26;
   const UPGRADES = [
@@ -46,8 +46,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
     if ([0, CONG_START, TRACK_LEN].some(x => Math.abs(x - s) < 25)) continue;
     scenery.push({ s, d: (srand() < .5 ? -1 : 1) * (12 + srand() * 14), kind: srand() < .55 ? 'tree' : 'pine', k: .8 + srand() * .7 });
   }
-  const D = window.PROCESSOR_DATA, heroes = D ? D.tierOrder.map(t => { const ms = D.processors[t].laptop?.models || []; return ms.find(m => m.hero) || ms[0]; }).filter(Boolean) : [];
-  (heroes.length ? heroes.map(h => `${h.brand} ${h.name}`) : ['AI PC']).concat(heroes.length ? [`${heroes[0].brand} ${heroes[0].name}`] : [])
+  ['INTEL AI PC', 'AI ON-DEVICE', 'INTEL AI PC', 'ALL-DAY BATTERY', 'INTEL AI PC'] // generic: no laptop names before the quiz
     .forEach((t, i) => scenery.push({ s: 260 + i * 820, d: (i % 2 ? 1 : -1) * 15, kind: 'board', text: t, color: i % 2 ? '#ffffff' : '#ffd25e' }));
   const gates = [[0, 'START', '#1f6bff'], [CONG_START, 'TRAFFIC AHEAD', '#ff8a3d'], [TRACK_LEN, 'FINISH', '#ffc53d']];
 
@@ -280,7 +279,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
   /* ---------------- gameplay */
   function toast(i) {
     hud.toastName.textContent = UPGRADES[i].name; hud.toastDesc.textContent = UPGRADES[i].desc;
-    hud.toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => hud.toast.classList.remove('show'), 2500);
+    hud.toast.classList.remove('show'); void hud.toast.offsetWidth; hud.toast.classList.add('show'); clearTimeout(toastTimer); toastTimer = setTimeout(() => hud.toast.classList.remove('show'), 2500);
   }
   function mini(tx, ms) { hud.zoneToast.innerHTML = tx; hud.zoneToast.classList.add('show'); clearTimeout(miniTimer); miniTimer = setTimeout(() => hud.zoneToast.classList.remove('show'), ms); }
   function snap(id) { const c = root.querySelector('#' + id); if (!c) return; const x = c.getContext('2d'); x.imageSmoothingEnabled = false; x.drawImage(canvas, 0, 0, c.width, c.height); }
@@ -304,6 +303,9 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
     mini('+1s  COLLISION', 800);
   }
   function step(dt) {
+    // safety net: never let a NaN reach the camera/HUD (would show an empty sky + "NaN" speed)
+    if (!Number.isFinite(P.s + P.d + P.v + P.vd)) { if (P._good) Object.assign(P, P._good, { vd: 0 }); else { P.v = 0; P.vd = 0; } }
+    else (P._good ||= {}), Object.assign(P._good, { s: P.s, d: P.d, v: Math.max(0, P.v), vd: P.vd });
     const racing = phase === 'race', finishing = phase === 'finishing' || phase === 'done';
     const touch = document.body.classList.contains('touch');
     const gas = racing && (keys.gas || touch), brk = racing && keys.brake;
@@ -313,7 +315,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
     const top = P.boosting ? V_BOOST : V_MAX;
     let a = 0;
     if (racing) {
-      if (gas || P.boosting) a += (P.boosting ? BOOST_ACCEL : ACCEL) * (1 - Math.pow(P.v / top, 2.2));
+      if (gas || P.boosting) a += (P.boosting ? BOOST_ACCEL : ACCEL) * (1 - Math.pow(Math.max(0, P.v) / top, 2.2)); // P.v can be < 0 after a bounce: pow(neg, 2.2) = NaN
       else if (P.v < V_CRUISE && !brk) a += 9;
       if (brk) a -= BRAKE_DECEL;
       a -= .0016 * P.v * P.v + (P.v > top ? (P.v - top) * 1.2 : 0);
@@ -386,7 +388,7 @@ window.createRace2D = function createRace2D({ root, canvas, onActivity = () => {
     render(now / 1000, dt);
     if (!shotBefore && stage === 1 && phase === 'race' && P.time > 1.2) { shotBefore = true; snap('res-before'); }
     if (wantAfterShot) { wantAfterShot = false; snap('res-after'); hud.results.classList.add('show'); }
-    setText(hud.speed, String(Math.round(P.v * 3.6)));
+    setText(hud.speed, String(Math.round(Math.abs(P.v) * 3.6)));
     if (hud.prog) hud.prog.style.width = clamp(P.s / TRACK_LEN, 0, 1) * 100 + '%';
     fpsFrames++; if (now - fpsT0 >= 500) { fpsShown = Math.round(fpsFrames * 1000 / (now - fpsT0)); fpsFrames = 0; fpsT0 = now; }
     setText(hud.fps, String(fpsShown));

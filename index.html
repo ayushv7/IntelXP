@@ -50,7 +50,7 @@
       <canvas class="pixel-stars" id="pixel-stars" aria-hidden="true"></canvas>
       <div class="landing-inner">
         <img class="landing-logo" src="assets/intel-com-brandmark.svg" alt="Intel" width="160" height="63" />
-        <h1 class="pixel-title"><span class="t1">AI PC</span><span class="t2">QUEST</span></h1>
+        <h1 class="pixel-title"><span class="t1">AI</span><span class="t1">PC</span><span class="t2">QUEST</span></h1>
         <button class="hex-btn hex-xl pulse" data-action="enter">ENTER EXPERIENCE</button>
       </div>
       <p class="brand-foot">1 MILLION MINDS</p>
@@ -124,7 +124,7 @@
           <div class="hud-bl hud-speed"><b id="hud-speed">0</b><span>KM/H</span></div>
           <div class="hud-br"><canvas id="minimap" width="120" height="120"></canvas></div>
         </div>
-        <div class="boost-hint" id="boost-hint" aria-live="polite"><kbd class="bh-key">SHIFT</kbd><span class="bh-text">Press SHIFT to BOOST</span></div>
+        <div class="boost-hint" id="boost-hint" aria-live="polite"><kbd class="bh-key"><b>⇧</b>SHIFT</kbd><span class="bh-text">PRESS SHIFT TO BOOST</span></div>
         <canvas class="wipe" id="wipe" aria-hidden="true"></canvas>
         <div class="flash" id="flash" aria-hidden="true"></div>
 
@@ -318,15 +318,6 @@
       <button class="sheet-close" data-action="close-sheet" aria-label="Close">✕</button>
       <h3 class="sheet-title" id="sources-title">Sources</h3>
       <ul class="sources-list" id="sources-list"></ul>
-    </div>
-  </div>
-
-  <!-- Inactivity warning -->
-  <div class="idle-overlay" id="idle-overlay" role="dialog" aria-modal="true" aria-labelledby="idle-title">
-    <div class="hex-card overlay-card">
-      <h3 class="ov-title" id="idle-title">Still there?</h3>
-      <p class="idle-text">Restarting in <b id="idle-count">10</b>s</p>
-      <button class="hex-btn hex-md" data-action="stay">I'M HERE</button>
     </div>
   </div>
 

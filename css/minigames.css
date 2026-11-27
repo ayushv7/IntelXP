@@ -16,13 +16,12 @@
 .mg-scene { position: relative; flex: 1; min-height: 0; overflow: hidden; border: 4px solid var(--electric); box-shadow: 0 0 0 4px #020814, 0 0 0 6px #0b3a8f, 0 0 32px rgba(31, 139, 255, .35); image-rendering: pixelated; }
 
 /* unlock toast (bottom-left corner) */
-.mg-toast { position: absolute; left: 24px; bottom: 24px; z-index: 12; display: flex; align-items: center; gap: 14px; padding: 14px 20px 14px 16px; max-width: min(420px, 70vw);
-  background: #0a1a44; border: 3px solid var(--cyan); box-shadow: 0 0 0 3px #020814, 0 0 28px rgba(0, 224, 255, .55); transform: translateX(-130%); transition: transform var(--t) var(--ease); }
-.mg-toast.show { transform: none; }
-.mg-toast-ico { font-size: 28px; color: var(--gold); text-shadow: 0 0 12px var(--gold); animation: spin 3s linear infinite; }
-.mg-toast small { display: block; font: 400 9px var(--font-pixel); color: var(--gold); letter-spacing: .08em; margin-bottom: 6px; }
-.mg-toast b { display: block; font: 400 clamp(11px, 1.1vw, 15px)/1.4 var(--font-pixel); color: #fff; }
-.mg-toast em { display: block; margin-top: 4px; font: 500 13px var(--font-ui); font-style: normal; color: var(--cyan-soft); }
+.mg-toast { position: absolute; z-index: 20; display: flex; align-items: center; gap: 20px; padding: 24px 36px 24px 28px; max-width: min(720px, 90vw); pointer-events: none;
+  background: #0a1a44; border: 4px solid var(--cyan); box-shadow: 0 0 0 4px #020814, 0 0 60px rgba(0, 224, 255, .6); }
+.mg-toast-ico { font-size: 48px; color: var(--gold); text-shadow: 0 0 12px var(--gold); animation: spin 3s linear infinite; }
+.mg-toast small { display: block; font: 400 clamp(11px, 1.1vw, 15px) var(--font-pixel); color: var(--gold); letter-spacing: .08em; margin-bottom: 6px; }
+.mg-toast b { display: block; font: 400 clamp(18px, 2.2vw, 32px)/1.35 var(--font-pixel); color: #fff; }
+.mg-toast em { display: block; margin-top: 8px; font: 500 clamp(15px, 1.3vw, 20px) var(--font-ui); font-style: normal; color: var(--cyan-soft); }
 
 /* RPG dialog box */
 .mg-dialog { position: absolute; inset: 0; z-index: 11; display: none; align-items: flex-end; justify-content: center; padding: 0 20px 5%; background: rgba(2, 8, 20, .45); }
@@ -36,6 +35,8 @@
 .mg-d-say { margin: 0; min-height: 0; font: 400 12px/1.5 var(--font-pixel); color: var(--gold); }
 .mg-d-say:empty { display: none; }
 .mg-d-btns { display: flex; flex-wrap: wrap; gap: 14px; justify-content: flex-end; }
+.mg-d-btns:has(> :nth-child(2)) { flex-wrap: nowrap; justify-content: stretch; }
+.mg-d-btns:has(> :nth-child(2)) > .hex-btn { flex: 1 1 0; min-width: 0; white-space: normal; }
 .mg-d-btns .hex-btn { min-height: 60px; font-size: clamp(11px, 1vw, 14px); }
 .mg-toggle { display: inline-flex; align-items: center; gap: 16px; padding: 12px 22px; font: 400 clamp(12px, 1.1vw, 16px) var(--font-pixel); color: #fff; background: #10245a; border: 3px solid var(--cyan); }
 .mg-sw { position: relative; width: 74px; height: 36px; background: #2a3550; border: 3px solid #fff; transition: background var(--t-ui); }
@@ -47,7 +48,7 @@
 /* intro + congratulations page */
 .mg-card { width: min(680px, 100%); }
 .mg-page.done .mg-card { border-color: var(--gold); }
-.mg-feats { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; text-align: left; font: 600 16px var(--font-ui); color: #e6eeff; }
+.mg-feats { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; text-align: left; font: 700 clamp(20px, 2vw, 30px)/1.3 var(--font-ui); color: #e6eeff; }
 .mg-feats li::before { content: '✦ '; color: var(--gold); }
 
 /* ---------- STUDY: hostel room ---------- */
@@ -173,20 +174,26 @@
 .mail-card.work .tag { background: #e3ecff; color: #0a3fc2; }
 .mail-card.work h4 { color: #0b1d45; }
 .mail-card.work p { color: #44506b; }
-.mail-card .file { align-self: flex-start; margin-top: auto; padding: .5cqw 1.2cqw; border: 1px solid #c7d2e8; border-radius: 6px; font-size: .85em; color: #0a3fc2; background: #f4f7ff; }
+.mail-card .file { align-self: flex-start; padding: .5cqw 1.2cqw; border: 1px solid #c7d2e8; border-radius: 6px; font-size: .85em; color: #0a3fc2; background: #f4f7ff; }
 .mail-card.spam { background: repeating-linear-gradient(135deg, #fff35c 0 2cqw, #ffd1f0 2cqw 4cqw); border: .45cqw dashed #e8001c; color: #5a0010; }
 .mail-card.spam .av { background: #e8001c; color: #fff35c; }
 .mail-card.spam .tag { background: #e8001c; color: #fff; }
 .mail-card.spam h4 { color: #e8001c; text-transform: uppercase; font-weight: 900; text-shadow: 1px 1px 0 #fff; }
 .mail-card.spam p { font-weight: 800; color: #7a0016; }
-.mail-card .cta { align-self: flex-start; margin-top: auto; padding: .6cqw 1.6cqw; background: #e8001c; color: #fff35c; font-weight: 900; animation: blink .6s steps(2) infinite; }
+.mail-card .cta { align-self: flex-start; padding: .6cqw 1.6cqw; background: #e8001c; color: #fff35c; font-weight: 900; animation: blink .6s steps(2) infinite; }
 .mail-ai { display: flex; align-items: center; gap: 1.2cqw; padding: 1cqw 1.4cqw; border-radius: 8px; background: #0b1d45; color: #fff; }
-.ai-lbl { font-size: .85em; opacity: .85; white-space: nowrap; }
-.wk.local .ai-lbl { color: #3dffa8; font-weight: 700; opacity: 1; }
-.ai-pick { padding: .4cqw 1.2cqw; border-radius: 6px; font-weight: 900; white-space: nowrap; }
-.ai-pick.is-spam { background: #e8001c; } .ai-pick.is-work { background: #1f8bff; }
+/* email footer: attachment / CTA on the left, small AI hint badge on the right */
+.mail-card footer { margin-top: auto; display: flex; align-items: center; justify-content: space-between; gap: 1cqw; }
+.ai-hint { flex: none; padding: .3cqw 1cqw; border-radius: 999px; font: 800 .78em var(--font-ui); font-style: normal; color: #fff; opacity: .9; white-space: nowrap; }
+.ai-hint.is-spam { background: #c62828; } .ai-hint.is-work { background: #0f9d58; }
+.wk.local .ai-hint { box-shadow: 0 0 0 2px #3dffa8; }
+/* sorted email flies to its folder (a copy, so the next email is live immediately) */
+.mail-fly { position: absolute; z-index: 4; pointer-events: none; transition: transform .38s cubic-bezier(.5, 0, .75, 0), opacity .38s; }
+.mail-fly .mail-card { height: 100%; }
+.t-imp { color: #3dffa8; } .t-spam { color: #ff4d5e; }
 .mg-btn { padding: 1cqw 2cqw; min-height: 40px; border-radius: 6px; font: 800 1.05em var(--font-ui); color: #fff; border: 2px solid transparent; }
-.mail-ai .ok { margin-left: auto; background: #0f9d58; } .mail-ai .no { background: #c62828; }
+.mail-ai { justify-content: center; } .mail-ai .mg-btn { flex: 1; font-size: 1.25em; padding: 1.2cqw 2cqw; }
+.mail-ai .ok { background: #0f9d58; } .mail-ai .no { background: #c62828; }
 .mg-btn:hover { filter: brightness(1.15); } .mg-btn:active { transform: scale(.96); }
 .wk.nonet .mail-ai { opacity: .35; pointer-events: none; }
 .mail-offline { display: none; position: absolute; inset: 0; z-index: 2; align-items: center; justify-content: center; padding: 4cqw; text-align: center; background: rgba(10, 16, 32, .82); color: #ffb3ba; font: 400 2.2cqw/1.6 var(--font-pixel); }
@@ -197,3 +204,5 @@
 @media (max-width: 900px) { .mg-top { padding: 0 150px 0 84px; gap: 12px; } .mg-title { display: none; } }
 @media (max-height: 500px) { .mg-top { min-height: 56px; } .mg-dialog { padding-bottom: 8px; } .mg-box { padding: 12px 16px; gap: 8px; } .mg-d-btns .hex-btn { min-height: 46px; } }
 @media (prefers-reduced-motion: reduce) { .bub, .app-token, .mg-toast-ico, .mg-toggle { animation: none !important; } }
+
+.mg-page.done .ov-text { font-size: clamp(16px, 1.6vw, 22px); line-height: 1.6; color: #fff; }

@@ -349,9 +349,6 @@ kbd { display: inline-block; padding: 3px 6px; margin: 0 1px; border: 1px solid 
 .sources-list { margin: 0; padding-left: 1.2em; display: grid; gap: 10px; font-size: var(--fs-label); line-height: 1.45; color: #c9dbf2; }
 
 /* ---------- Idle / toast ---------- */
-.idle-overlay { position: fixed; inset: 0; z-index: 70; display: none; align-items: center; justify-content: center; background: rgba(0, 4, 14, .8); backdrop-filter: blur(4px); font-family: var(--font-pixel); }
-.idle-overlay.show { display: flex; animation: fade-in .3s; }
-.idle-text { margin: 0; font-family: var(--font-ui); font-size: var(--fs-body); color: var(--cyan-soft); }
 .toast { position: fixed; left: 50%; bottom: 40px; transform: translate(-50%, 20px); z-index: 80; opacity: 0; pointer-events: none; font-family: var(--font-ui);
   background: #071a3b; border: 1px solid var(--gold); color: var(--gold); padding: 14px 24px; border-radius: 12px; font-size: var(--fs-label); font-weight: 600; transition: var(--t-ui) var(--ease); max-width: 90vw; text-align: center; }
 .toast.show { opacity: 1; transform: translate(-50%, 0); }
@@ -843,3 +840,34 @@ button.card:focus-visible { outline: 2px solid var(--cyan); outline-offset: 3px;
   .stat-tile { padding: var(--s3); }
   .stat-tile b { font-size: 22px; }
 }
+
+/* ---------- Boost hint v2: big keycap, glow pulse + bounce; stays on the right verge ---------- */
+.boost-hint { flex-direction: column; gap: 12px; padding: 18px 20px; max-width: min(240px, 22vw); border-radius: var(--r-card); text-align: center;
+  background: rgba(4, 14, 34, .78); border: 2px solid var(--gold); font: 400 clamp(11px, 1vw, 15px)/1.5 var(--font-pixel); color: var(--gold);
+  box-shadow: 0 0 24px rgba(255, 200, 69, .45); }
+.boost-hint.show { animation: bh-glow 1s ease-in-out infinite; }
+.boost-hint .bh-key { display: flex; flex-direction: column; align-items: center; gap: 4px; min-width: 120px; padding: 14px 18px 16px; font: 400 clamp(14px, 1.3vw, 20px) var(--font-pixel);
+  color: #2a1d00; background: linear-gradient(#ffe08a, var(--gold)); border: 0; border-radius: 10px; box-shadow: 0 6px 0 #a87800, 0 0 24px rgba(255, 200, 69, .8); }
+.boost-hint .bh-key b { font-size: 1.6em; line-height: 1; }
+@keyframes bh-glow { 0%, 100% { scale: 1; box-shadow: 0 0 18px rgba(255, 200, 69, .4); } 50% { scale: 1.07; box-shadow: 0 0 46px rgba(255, 200, 69, .95); } }
+@media (prefers-reduced-motion: reduce) { .boost-hint.show { animation: none; } }
+
+/* ---------- Feature-unlocked popup (race + minigames): big in the centre, hold ~1s, float up and fade ---------- */
+@keyframes unlock-pop {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(.6); }
+  12%  { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+  20%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  62%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, calc(-50% - 40vh)) scale(.55); }
+}
+.upgrade-toast, .mg-toast { top: 50%; left: 50%; right: auto; bottom: auto; opacity: 0; transform: translate(-50%, -50%) scale(.6); transition: none; z-index: 20; }
+.upgrade-toast.show, .mg-toast.show { animation: unlock-pop 2.2s var(--ease) forwards; }
+.upgrade-toast { padding: 28px 48px; max-width: min(760px, 92vw); border-width: 3px; box-shadow: 0 0 60px rgba(255, 200, 69, .55); }
+.upgrade-toast .ut-head { font-size: clamp(12px, 1.3vw, 18px); }
+.upgrade-toast .ut-name { font-size: clamp(20px, 2.6vw, 40px); line-height: 1.3; }
+.upgrade-toast .ut-desc { font-size: clamp(14px, 1.3vw, 20px); }
+@media (prefers-reduced-motion: reduce) {
+  @keyframes unlock-pop { 0%, 70% { opacity: 1; transform: translate(-50%, -50%); } 100% { opacity: 0; transform: translate(-50%, -50%); } }
+}
+/* bigger "features unlocked" lists on end/results screens */
+.ticks { font-size: clamp(18px, 1.8vw, 26px); gap: 12px 32px; font-weight: 700; }

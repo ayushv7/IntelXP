@@ -71,7 +71,7 @@ window.Minis = (() => {
       scene: q('.mg-scene'),
       get count() { return n; },
       intro({ title, lines, start }) {
-        q('.mg-card').innerHTML = `<h3 class="ov-title">${esc(title)}</h3>${lines.map(l => `<p class="ov-text">${esc(l)}</p>`).join('')}
+        q('.mg-card').innerHTML = `<h3 class="ov-title">${esc(title)}</h3>${lines.map(l => `<p class="ov-text">${l && l.html ? l.html : esc(l)}</p>`).join('')}
           <div class="btn-row"><button class="hex-btn hex-md mg-go">${esc(start)}</button></div>`;
         q('.mg-page').classList.add('show');
         q('.mg-go').focus({ preventScroll: true });
@@ -106,7 +106,7 @@ window.Minis = (() => {
         const t = q('.mg-toast');
         t.querySelector('b').textContent = name; t.querySelector('em').textContent = sub || '';
         t.classList.remove('show'); void t.offsetWidth; t.classList.add('show');
-        clearTimeout(ui._tt); ui._tt = ctx.later(() => t.classList.remove('show'), 3800);
+        clearTimeout(ui._tt); ui._tt = ctx.later(() => t.classList.remove('show'), 2400);
         window.SFX?.upgrade(n - 1);
       },
       finish({ title, lines = [], features = [], extraHTML = '' }) {

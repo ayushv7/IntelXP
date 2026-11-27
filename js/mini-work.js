@@ -1,8 +1,9 @@
 /* =========================================================================
    mini-work.js — WORK minigame (busy metro, inbox sorting with an AI helper)
-   Flow: intro -> sort emails (accept/reject the AI's suggestion)
-         -> battery drain (AI PC toggle) -> tunnel, no internet (on-device AI)
-         -> loud metro (AI noise cancellation) -> congratulations.
+   Flow: intro -> sort emails into IMPORTANT / SPAM (the AI's guess is a hint
+         badge on each email). Scenarios are time-based, with >= 8 s of normal
+         play after each: battery drain (AI PC toggle) -> tunnel, no internet
+         (on-device AI) -> loud metro (AI noise cancellation) -> score ~5 s later.
    All on-screen text lives in TEXT.
    ========================================================================= */
 (() => {
@@ -10,19 +11,23 @@
     title: 'WORK MISSION',
     intro: {
       title: 'Clear your inbox on the metro',
-      lines: ['The built-in AI suggests if each email is SPAM or IMPORTANT.', 'Tap ACCEPT if it is right, REJECT if it is wrong.'],
+      lines: [
+        { html: 'Sort each email: <b class="t-imp">important</b> work goes to your Work folder, <b class="t-spam">spam</b> goes to the Trash.' },
+        'The AI adds a hint to every email. It is usually right, but not always!'
+      ],
       start: 'START ▶'
     },
     appName: 'Mail',
     inbox: 'Inbox', work: 'Work', trash: 'Trash',
-    aiSays: 'AI suggests:',
-    aiSaysLocal: 'On-device AI suggests:',
+    aiSays: 'AI hint',
+    aiSaysLocal: 'On-device AI hint',
     spam: 'SPAM', important: 'IMPORTANT',
-    accept: '✓ ACCEPT', reject: '✕ REJECT',
+    btnImportant: '📁 IMPORTANT', btnSpam: '🗑️ SPAM',
     good: 'Sorted!', bad: 'Oops, wrong folder',
     noNet: 'No connection: online AI suggestions unavailable',
     battery: 'Battery',
     labelBasic: 'Basic laptop',
+    timing: { calmMs: 8000, tunnelMs: 6000, endMs: 5000, drainFast: 5.5, drainAI: .12 }, // scenario pacing
     labelAI: 'Intel AI PC',
     batt: { title: 'Battery draining fast!', text: 'Your basic laptop runs AI on the CPU and burns through the battery. Switch to an AI PC?', toggle: 'AI PC mode' },
     feat1: { name: 'All-day battery', sub: 'AI runs on the low-power Intel NPU' },
@@ -32,10 +37,9 @@
     feat3: { name: 'AI noise cancellation', sub: 'Runs on the NPU, barely touches the battery' },
     chatter: ['BLAH BLAH', 'HAHA!', 'NEXT STATION…', 'HELLO?? CAN YOU HEAR ME?', '♪♪♪', 'MOVE IN PLEASE!'],
     done: {
-      title: 'INBOX ZERO!',
-      lines: ['All emails sorted before your stop, with battery to spare.'],
+      title: 'WORK DONE!',
+      score: (x, y, z) => `You sorted ${x} of ${y} correctly (${z}%)`,
       features: ['All-day battery (AI on the NPU)', 'On-device AI that works offline', 'AI noise cancellation'],
-      laptop: name => `Get it on the ${name}`
     },
     // Work emails look professional; spam looks obviously like spam.
     workMails: [
@@ -58,7 +62,6 @@
 
   window.Minis.register('work', (ctx, kit) => {
     const { esc, clamp, rand } = ctx;
-    const hero = ctx.heroOf('pro');
     const ui = kit.shell({ title: TEXT.title, cls: 'mg-work' });
     ui.scene.innerHTML = `
       <div class="wk">
@@ -77,8 +80,7 @@
                 </nav>
                 <div class="mail-pane">
                   <div class="mail-stack"></div>
-                  <div class="mail-ai"><span class="ai-lbl">${esc(TEXT.aiSays)}</span><b class="ai-pick"></b>
-                    <button class="mg-btn ok">${esc(TEXT.accept)}</button><button class="mg-btn no">${esc(TEXT.reject)}</button></div>
+                  <div class="mail-ai"><button class="mg-btn ok">${esc(TEXT.btnImportant)}</button><button class="mg-btn no">${esc(TEXT.btnSpam)}</button></div>
                   <div class="mail-offline">${esc(TEXT.noNet)}</div>
                   <p class="mail-fb" aria-live="polite"></p>
                 </div>
@@ -91,84 +93,88 @@
       </div>`;
     const $ = s => ui.scene.querySelector(s);
     const wk = $('.wk'), cv = $('.wk-metro'), g = cv.getContext('2d');
-    const stack = $('.mail-stack'), pick = $('.ai-pick'), fb = $('.mail-fb');
+    const stack = $('.mail-stack'), fb = $('.mail-fb');
+    const T = TEXT.timing;
 
-    /* ---------------- email queue (AI is right most of the time; sometimes you must REJECT) */
+    /* ---------------- endless email queue (AI hint is right most of the time) */
     const shuffle = a => a.map(v => [Math.random(), v]).sort((x, y) => x[0] - y[0]).map(v => v[1]);
-    let queue = [];
+    let queue = [], hintLabel = TEXT.aiSays;
     const refill = () => {
       const w = shuffle(TEXT.workMails), s = shuffle(TEXT.spamMails), out = [];
       for (let i = 0; i < 6; i++) out.push({ ...w[i], spam: false }, { ...s[i], spam: true });
-      shuffle(out).forEach((m, i) => { m.aiSpam = (i % 5 === 3) ? !m.spam : m.spam; queue.push(m); }); // every 5th suggestion is wrong
+      shuffle(out).forEach((m, i) => { m.aiSpam = (i % 5 === 3) ? !m.spam : m.spam; queue.push(m); }); // every 5th hint is wrong
     };
     refill();
+    const hint = m => `<em class="ai-hint ${m.aiSpam ? 'is-spam' : 'is-work'}">${esc(hintLabel)}: ${m.aiSpam ? TEXT.spam : TEXT.important}</em>`;
     const cardHTML = m => m.spam
       ? `<article class="mail-card spam"><header><span class="av">!!</span><div><b>${esc(m.from)}</b><small>${esc(m.addr)}</small></div><em class="tag">⚠ Suspicious</em></header>
-          <h4>${esc(m.subj)}</h4><p>${esc(m.body)}</p><span class="cta">CLICK HERE!!!</span></article>`
+          <h4>${esc(m.subj)}</h4><p>${esc(m.body)}</p><footer><span class="cta">CLICK HERE!!!</span>${hint(m)}</footer></article>`
       : `<article class="mail-card work"><header><span class="av">${esc(m.from.split(/\s/).filter(Boolean).slice(0, 2).map(x => x[0]).join(''))}</span><div><b>${esc(m.from)}</b><small>${esc(m.addr)}</small></div><em class="tag">Work</em></header>
-          <h4>${esc(m.subj)}</h4><p>${esc(m.body)}</p>${m.file ? `<span class="file">📎 ${esc(m.file)}</span>` : ''}</article>`;
+          <h4>${esc(m.subj)}</h4><p>${esc(m.body)}</p><footer>${m.file ? `<span class="file">📎 ${esc(m.file)}</span>` : '<span></span>'}${hint(m)}</footer></article>`;
     function renderStack() {
       if (queue.length < 4) refill();
       stack.innerHTML = queue.slice(0, 3).map((m, i) => `<div class="slot s${i}">${cardHTML(m)}</div>`).reverse().join('');
-      const m = queue[0];
-      pick.textContent = m.aiSpam ? `🗑️ ${TEXT.spam}` : `📁 ${TEXT.important}`;
-      pick.className = 'ai-pick ' + (m.aiSpam ? 'is-spam' : 'is-work');
-      $('.n-in').textContent = String(Math.max(0, 10 - sorted));
+      $('.n-in').textContent = String(queue.length);
     }
 
     /* ---------------- state */
-    let sorted = 0, busy = false, batt = 100, drain = 2.4, offline = false, tunnelT = 0, noise = 0, quiet = false, nWork = 0, nTrash = 0;
-    let blocked = true, started = false; // dialogs / intro / tunnel without upgrade
-    function sort(acceptAI) {
-      if (busy || blocked) return;
-      const m = queue[0], toSpam = acceptAI ? m.aiSpam : !m.aiSpam, right = toSpam === m.spam;
-      busy = true;
+    let sorted = 0, correct = 0, batt = 100, drain = T.drainFast, offline = false, noise = 0, quiet = false, nWork = 0, nTrash = 0;
+    let blocked = true, started = false; // intro, dialogs, tunnel before the upgrade, end
+    /** Sort the top email. Speed-sorting is fine: the card flies away as a copy while the next one is already live. */
+    function sort(toSpam) {
+      if (blocked) return;
+      const m = queue[0], right = toSpam === m.spam;
       const card = stack.querySelector('.slot.s0'), target = $(toSpam ? '.f-trash' : '.f-work');
-      const a = card.getBoundingClientRect(), b = target.getBoundingClientRect();
-      card.style.transition = 'transform .5s cubic-bezier(.5,0,.75,0), opacity .5s';
-      card.style.transform = `translate(${b.left + b.width / 2 - (a.left + a.width / 2)}px, ${b.top + b.height / 2 - (a.top + a.height / 2)}px) scale(.08) rotate(${toSpam ? -18 : 10}deg)`;
-      card.style.opacity = '.2';
+      if (card) {
+        const a = card.getBoundingClientRect(), b = target.getBoundingClientRect(), box = wk.getBoundingClientRect();
+        const fly = card.cloneNode(true); fly.className = 'mail-fly';
+        Object.assign(fly.style, { left: a.left - box.left + 'px', top: a.top - box.top + 'px', width: a.width + 'px', height: a.height + 'px', font: getComputedStyle(stack).font }); // the copy lives outside the screen: keep the email font
+        wk.appendChild(fly);
+        requestAnimationFrame(() => {
+          fly.style.transform = `translate(${b.left + b.width / 2 - (a.left + a.width / 2)}px, ${b.top + b.height / 2 - (a.top + a.height / 2)}px) scale(.08) rotate(${toSpam ? -18 : 10}deg)`;
+          fly.style.opacity = '.15';
+        });
+        ctx.later(() => { fly.remove(); target.classList.remove('bump'); void target.offsetWidth; target.classList.add('bump'); }, 380);
+      }
       window.SFX?.[toSpam ? 'paper' : 'whoosh']();
       fb.textContent = right ? TEXT.good : TEXT.bad; fb.className = 'mail-fb ' + (right ? 'good' : 'bad');
       if (!right) window.SFX?.error();
-      ctx.later(() => {
-        target.classList.remove('bump'); void target.offsetWidth; target.classList.add('bump');
-        if (toSpam) nTrash++; else nWork++;
-        $('.n-work').textContent = nWork; $('.n-trash').textContent = nTrash;
-        queue.shift(); sorted++; busy = false; renderStack();
-      }, 520);
+      if (toSpam) nTrash++; else nWork++;
+      $('.n-work').textContent = nWork; $('.n-trash').textContent = nTrash;
+      sorted++; if (right) correct++;
+      queue.shift(); renderStack();
     }
-    $('.mail-ai .ok').addEventListener('click', () => sort(true));
-    $('.mail-ai .no').addEventListener('click', () => sort(false));
+    $('.mail-ai .ok').addEventListener('click', () => sort(false));
+    $('.mail-ai .no').addEventListener('click', () => sort(true));
 
     async function run() {
       await ui.intro(TEXT.intro); if (ctx.dead) return;
       blocked = false; started = true;
-      // 1) battery
-      await until(() => batt <= 55); if (ctx.dead) return;
+      // 1) battery: drains fast from the start; the question comes after the calm period
+      await ctx.wait(T.calmMs); if (ctx.dead) return;
       blocked = true;
       await ui.ask({ title: TEXT.batt.title, text: TEXT.batt.text, tone: 'alert', choices: [{ label: TEXT.batt.toggle, kind: 'toggle' }] }); if (ctx.dead) return;
-      drain = .12; ui.unlock(TEXT.feat1); wk.classList.add('ai'); $('.wk-label').textContent = hero ? ctx.fullName(hero) : TEXT.labelAI; blocked = false;
+      drain = T.drainAI; ui.unlock(TEXT.feat1); wk.classList.add('ai'); $('.wk-label').textContent = TEXT.labelAI; blocked = false;
       // 2) tunnel
-      await until(() => sorted >= 4 && !busy); if (ctx.dead) return;
-      blocked = true; offline = true; tunnelT = 0; wk.classList.add('tunnel', 'nonet'); window.SFX?.beep();
+      await ctx.wait(T.calmMs); if (ctx.dead) return;
+      blocked = true; offline = true; wk.classList.add('tunnel', 'nonet'); window.SFX?.beep();
       await ctx.wait(1500); if (ctx.dead) return;
       await ui.ask({ title: TEXT.tunnel.title, text: TEXT.tunnel.text, tone: 'alert', choices: [{ label: TEXT.tunnel.yes }] }); if (ctx.dead) return;
-      ui.unlock(TEXT.feat2); wk.classList.remove('nonet'); wk.classList.add('local'); $('.ai-lbl').textContent = TEXT.aiSaysLocal; blocked = false;
-      ctx.later(() => { offline = false; wk.classList.remove('tunnel'); }, 6000);
-      // 3) noise
-      await until(() => sorted >= 7 && !busy); if (ctx.dead) return;
+      hintLabel = TEXT.aiSaysLocal; renderStack();
+      ui.unlock(TEXT.feat2); wk.classList.remove('nonet'); wk.classList.add('local'); blocked = false;
+      ctx.later(() => { offline = false; wk.classList.remove('tunnel'); }, T.tunnelMs);
+      // 3) noise builds up, then the question
+      await ctx.wait(T.calmMs); if (ctx.dead) return;
       noise = .01;
       await until(() => noise >= 1); if (ctx.dead) return;
       blocked = true;
       await ui.ask({ title: TEXT.noise.title, text: TEXT.noise.text, tone: 'alert', choices: [{ label: TEXT.noise.yes }] }); if (ctx.dead) return;
       quiet = true; wk.classList.add('quiet'); ui.unlock(TEXT.feat3); blocked = false;
-      // finish
-      await until(() => sorted >= 10 && !busy); if (ctx.dead) return;
+      // end ~5 s after the last scenario
+      await ctx.wait(T.endMs); if (ctx.dead) return;
       blocked = true;
-      await ctx.wait(500); if (ctx.dead) return;
-      ui.finish({ title: TEXT.done.title, lines: TEXT.done.lines, features: TEXT.done.features,
-        extraHTML: hero ? `<p class="mini-brand">${esc(TEXT.done.laptop(ctx.fullName(hero)))}</p>` : '' });
+      const pct = sorted ? Math.round(correct / sorted * 100) : 0;
+      ui.finish({ title: TEXT.done.title, lines: [TEXT.done.score(correct, sorted, pct)], features: TEXT.done.features });
     }
     const until = cond => new Promise(res => { const chk = () => { if (ctx.dead || cond()) res(); else ctx.later(chk, 80); }; chk(); });
 

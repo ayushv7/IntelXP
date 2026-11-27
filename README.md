@@ -33,8 +33,8 @@ All paths are relative, so the site works from a sub-path. `.nojekyll` is includ
 
 - Use the fullscreen button in the top-right corner, or launch Chrome in kiosk mode:
   `google-chrome --kiosk --autoplay-policy=no-user-gesture-required https://<you>.github.io/<repo>/`
-- After 60 s with no input the experience resets to the landing screen. A "Still there?" warning appears at 50 s.
-- After 30 s idle on the landing screen, attract mode plays a silent AI-driven demo race (all upgrades on) with rotating laptop names and today's top 5. Any touch or key returns to the landing screen.
+- There is no inactivity reset: progress is kept, and saved to sessionStorage so an accidental refresh returns to the same screen and answers (a refresh mid-minigame returns to mission select). The RESTART button on the end screen starts over.
+- After 30 s idle on the landing screen, attract mode plays a silent AI-driven demo race (all upgrades on) with rotating Intel AI PC lines and today's top 5. Any touch or key returns to the landing screen.
 - Leaderboard: after a race, players enter 3 initials. Today's top 5 times are kept in `localStorage` and reset daily.
 - Sound is muted by default; use the speaker button in the top-right corner. On phones, crashes and coins vibrate.
 - The end screen shows a QR code to `?result=<tier>&model=<sku>`, which opens a phone card ("Show this in store").

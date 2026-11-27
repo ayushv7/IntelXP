@@ -28,8 +28,8 @@ window.loadGameModule = async function loadGameModule() {
 
 /* ------------------------------------------------------------ tuning */
 const TRACK_LEN = 4000;
-const COIN_S = [430, 1250, 2480];         // guaranteed upgrade coins, in order
-const CONG_START = 1700, CONG_END = 2900; // congested zone
+const COIN_S = [330, 1250, 2480];         // guaranteed upgrade coins, in order
+const CONG_START = 2140, CONG_END = 2900; // congested zone
 const ROAD_HALF = 8;                      // 4 lanes x 4 m
 const LANES = [-6, -2, 2, 6];
 const PLAYER_LIMIT = 9.0; // car centre limit; the guard rail sits just beyond
@@ -487,11 +487,9 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     hillMesh.receiveShadow = true; scene.add(hillMesh);
 
     // a handful of billboards (fewer = cleaner)
-    // billboards rotate the 4 hero laptops from processors.js: "[Brand Model] · Intel Core Ultra AI laptop"
-    const D = window.PROCESSOR_DATA, heroes = D ? D.tierOrder.map(t => { const ms = D.processors[t].laptop?.models || []; return ms.find(m => m.hero) || ms[0]; }).filter(Boolean) : [];
-    const boards = heroes.length
-      ? Array.from({ length: 5 }, (_, i) => { const h = heroes[i % heroes.length]; return ['Intel® Core™ Ultra AI laptop', `${h.brand} ${h.name}`, i % 2 ? '#ffffff' : '#ffd25e']; })
-      : [['INTEL CORE ULTRA', 'AI PC', '#ffd25e'], ['ON-DEVICE AI', 'NPU', '#ffffff']];
+    // billboards: generic Intel AI PC messages (no laptop names before the quiz)
+    const boards = [['INTEL AI PC', 'AI on-device', '#ffd25e'], ['INTEL AI PC', 'NPU · GPU · CPU', '#ffffff'], ['INTEL AI PC', 'XeSS AI upscaling', '#ffd25e'],
+      ['INTEL AI PC', 'Works offline', '#ffffff'], ['INTEL AI PC', 'All-day battery', '#ffd25e']];
     const postPair = M(0xf4f1ea, { loColor: 0xb0b0b0, r: .5, m: .3 });
     boards.forEach(([a, b, c], i) => {
       const tex = billboardTex(a, b, c);
@@ -1544,7 +1542,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     const u = UPGRADES[i];
     hud.toastName.textContent = u.name;
     hud.toastDesc.textContent = u.desc;
-    hud.toast.classList.add('show');
+    hud.toast.classList.remove('show'); void hud.toast.offsetWidth; hud.toast.classList.add('show'); // centre, hold ~1s, float up
     clearTimeout(toastTimer);
     toastTimer = setTimeout(() => hud.toast.classList.remove('show'), 2500);
   }
@@ -1616,6 +1614,9 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
   /* ------------------------------------------------------- simulation */
   const tmpF = {};
   function step(dt) {
+    // safety net: never let a NaN reach the camera/HUD (would show an empty sky + "NaN" speed)
+    if (!Number.isFinite(P.s + P.d + P.v + P.vd)) { if (P._good) Object.assign(P, P._good, { vd: 0 }); else { P.v = 0; P.vd = 0; } }
+    else (P._good ||= {}), Object.assign(P._good, { s: P.s, d: P.d, v: Math.max(0, P.v), vd: P.vd });
     const racing = phase === 'race';
     const finishing = phase === 'finishing' || phase === 'done';
     // --- longitudinal
@@ -1627,7 +1628,7 @@ function createGame({ root, canvas, onActivity = () => {}, onFallback = null }) 
     const vTop = P.boosting ? V_BOOST : V_MAX;
     let a = 0;
     if (racing) {
-      if (gas || P.boosting) a += (P.boosting ? BOOST_ACCEL : ACCEL) * (1 - Math.pow(P.v / vTop, 2.2));
+      if (gas || P.boosting) a += (P.boosting ? BOOST_ACCEL : ACCEL) * (1 - Math.pow(Math.max(0, P.v) / vTop, 2.2)); // P.v can be < 0 after a bounce: pow(neg, 2.2) = NaN
       else if (P.v < V_CRUISE && !brk) a += 9;          // gentle auto-cruise keeps the race moving
       if (brk) a -= BRAKE_DECEL;
       a -= .0016 * P.v * P.v + (P.v > vTop ? (P.v - vTop) * 1.2 : 0);

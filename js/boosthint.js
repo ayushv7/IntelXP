@@ -10,7 +10,7 @@ window.createBoostHint = function (root) {
   function show(now) {
     on = true; since = now; shown++;
     const t = touch();
-    text.textContent = t ? 'Tap BOOST' : 'Press SHIFT to BOOST';
+    text.textContent = t ? 'TAP BOOST' : 'PRESS SHIFT TO BOOST';
     key.hidden = t; el.classList.toggle('touch', t); el.classList.add('show');
     if (t) btn?.classList.add('hint');
   }
